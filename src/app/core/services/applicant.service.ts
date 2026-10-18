@@ -63,4 +63,8 @@ export class ApplicantService {
   activate(employeePublicId: string): Observable<ApplicantResponse> {
     return this.http.post<ApplicantResponse>(`${this.apiUrl}/${employeePublicId}/activate`, {});
   }
+
+  resendSetup(employeePublicId: string): Observable<ApplicantResponse> {
+    return this.http.post<ApplicantResponse>(`${this.apiUrl}/${employeePublicId}/resend-setup`, {});
+  }
 }

@@ -4,11 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TranslocoModule } from '@jsverse/transloco';
 import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -19,7 +21,6 @@ import { AuthService } from '../../../core/services/auth.service';
 import { Credential, CredentialType } from '../../../core/models/credential.model';
 import { Employee } from '../../../core/models/employee.model';
 import { EmployeeService } from '../../../core/services/employee.service';
-import { DocumentResponse } from '../../../core/models/document.model';
 import { CredentialReviewDialogComponent } from '../credential-review-dialog/credential-review-dialog.component';
 
 @Component({
@@ -27,15 +28,42 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
   standalone: true,
   imports: [
     CommonModule, FormsModule, RouterModule,
-    MatTableModule, MatPaginatorModule, MatButtonModule,
-    MatIconModule, MatCardModule, MatChipsModule, MatDialogModule,
+    MatTableModule, MatButtonModule,
+    MatIconModule, MatCardModule, MatChipsModule, MatFormFieldModule,
+    MatInputModule, MatSelectModule, MatDialogModule,
     MatProgressSpinnerModule, MatSnackBarModule, TranslocoModule
   ],
   template: `
     <div class="page-header">
       <h2>{{ 'credentials.review.title' | transloco }}</h2>
-      <span class="badge">{{ 'credentials.review.pendingBadge' | transloco: { count: totalElements } }}</span>
+      <span class="badge">{{ 'credentials.review.pendingBadge' | transloco: { count: credentials.length } }}</span>
     </div>
+
+    <mat-card class="filters-bar">
+      <div class="filters-top">
+        <mat-form-field appearance="outline" class="filter-search" subscriptSizing="dynamic">
+          <mat-label>{{ 'credentials.review.searchLabel' | transloco }}</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput [(ngModel)]="search" (ngModelChange)="applyFilters()"
+                 [placeholder]="'credentials.review.searchPlaceholder' | transloco">
+          @if (search) {
+            <button matSuffix mat-icon-button (click)="search=''; applyFilters()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-type" subscriptSizing="dynamic">
+          <mat-label>{{ 'common.type' | transloco }}</mat-label>
+          <mat-select [(ngModel)]="typeFilter" (ngModelChange)="applyFilters()">
+            <mat-option value="">{{ 'credentials.review.filterAllTypes' | transloco }}</mat-option>
+            @for (t of credentialTypes; track t.publicId) {
+              <mat-option [value]="t.publicId">{{ t.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-card>
 
     <mat-card>
       @if (loading) {
@@ -47,10 +75,15 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
           <mat-icon>check_circle</mat-icon>
           <p>{{ 'credentials.review.allCaughtUp' | transloco }}</p>
         </div>
+      } @else if (filtered.length === 0) {
+        <div class="empty-state">
+          <mat-icon>filter_alt_off</mat-icon>
+          <p>{{ 'credentials.review.noMatches' | transloco }}</p>
+        </div>
       } @else if (isMobile) {
         <!-- Mobile: stacked cards -->
         <div class="card-list">
-          @for (row of credentials; track row.publicId) {
+          @for (row of filtered; track row.publicId) {
             <div class="entity-card">
               <div class="entity-card-top">
                 <a class="name-link" [routerLink]="['/employees', row.employeePublicId]">
@@ -73,7 +106,7 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
         </div>
       } @else {
         <div class="table-scroll">
-        <table mat-table [dataSource]="credentials" class="full-width">
+        <table mat-table [dataSource]="filtered" class="full-width">
           <ng-container matColumnDef="employee">
             <th mat-header-cell *matHeaderCellDef>{{ 'credentials.list.colEmployee' | transloco }}</th>
             <td mat-cell *matCellDef="let row">
@@ -82,9 +115,6 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
                   <strong>{{ getEmployeeName(row.employeePublicId) }}</strong>
                 </a>
               </div>
-              @if (isMobile) {
-                <div class="cell-sub">{{ getTypeName(row.credentialTypePublicId) }}</div>
-              }
             </td>
           </ng-container>
 
@@ -106,15 +136,9 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let row">
-              @if (isMobile) {
-                <button mat-icon-button color="primary" (click)="openReview(row)">
-                  <mat-icon>rate_review</mat-icon>
-                </button>
-              } @else {
-                <button mat-raised-button color="primary" (click)="openReview(row)">
-                  <mat-icon>rate_review</mat-icon> {{ 'credentials.review.reviewBtn' | transloco }}
-                </button>
-              }
+              <button mat-raised-button color="primary" (click)="openReview(row)">
+                <mat-icon>rate_review</mat-icon> {{ 'credentials.review.reviewBtn' | transloco }}
+              </button>
             </td>
           </ng-container>
 
@@ -122,15 +146,6 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
         </div>
-
-        <mat-paginator
-          [length]="totalElements"
-          [pageSize]="pageSize"
-          [pageIndex]="pageIndex"
-          [pageSizeOptions]="[10, 20, 50]"
-          (page)="onPage($event)"
-          showFirstLastButtons>
-        </mat-paginator>
       }
     </mat-card>
   `,
@@ -143,6 +158,10 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
       background: #e3f2fd; color: #1565c0; padding: 4px 12px;
       border-radius: 12px; font-size: 13px; font-weight: 500;
     }
+    .filters-bar { margin-bottom: 16px; padding: 12px 16px; }
+    .filters-top { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .filter-search { flex: 1 1 260px; min-width: 200px; }
+    .filter-type { flex: 0 1 240px; min-width: 180px; }
     .full-width { width: 100%; }
     .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .loading-container { display: flex; justify-content: center; padding: 48px; }
@@ -153,7 +172,6 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
       font-size: 48px; width: 48px; height: 48px; color: #4caf50;
     }
     .cell-main { font-weight: 500; }
-    .cell-sub { font-size: 12px; color: #888; line-height: 1.3; }
     .card-list { display: flex; flex-direction: column; gap: 10px; }
     .entity-card {
       background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 12px 14px;
@@ -181,17 +199,16 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
 })
 export class CredentialReviewComponent implements OnInit {
   credentials: Credential[] = [];
+  filtered: Credential[] = [];
   credentialTypes: CredentialType[] = [];
   employees: Employee[] = [];
   loading = true;
-  totalElements = 0;
-  pageSize = 20;
-  pageIndex = 0;
   isMobile = false;
   displayedColumns = ['employee', 'type', 'issuer', 'submitted', 'actions'];
 
-  private readonly desktopColumns = ['employee', 'type', 'issuer', 'submitted', 'actions'];
-  private readonly mobileColumns = ['employee', 'actions'];
+  // Filters
+  search = '';
+  typeFilter = '';
 
   constructor(
     private credentialService: CredentialService,
@@ -204,7 +221,6 @@ export class CredentialReviewComponent implements OnInit {
   ) {
     this.breakpointObserver.observe([Breakpoints.Handset]).subscribe(result => {
       this.isMobile = result.matches;
-      this.displayedColumns = result.matches ? this.mobileColumns : this.desktopColumns;
     });
   }
 
@@ -224,27 +240,47 @@ export class CredentialReviewComponent implements OnInit {
   loadEmployees(): void {
     const agencyId = this.authService.agencyPublicId();
     this.employeeService.getAll(agencyId, 0, 1000).subscribe({
-      next: page => this.employees = page.content
+      next: page => {
+        this.employees = page.content;
+        // Names may have arrived after the credentials — re-apply so search works.
+        this.applyFilters();
+      }
     });
   }
 
   loadData(): void {
     this.loading = true;
     const agencyId = this.authService.agencyPublicId();
-    this.credentialService.getPendingReview(agencyId, this.pageIndex, this.pageSize).subscribe({
+    // Load the full pending-review queue so search/type filters span everything,
+    // consistent with the Employees/Applicants screens (client-side filtering).
+    this.credentialService.getPendingReview(agencyId, 0, 5000).subscribe({
       next: page => {
         this.credentials = page.content;
-        this.totalElements = page.totalElements;
+        this.applyFilters();
         this.loading = false;
       },
       error: () => { this.loading = false; }
     });
   }
 
-  onPage(event: PageEvent): void {
-    this.pageIndex = event.pageIndex;
-    this.pageSize = event.pageSize;
-    this.loadData();
+  applyFilters(): void {
+    const q = this.search.trim().toLowerCase();
+    this.filtered = this.credentials.filter(c => {
+      if (this.typeFilter && c.credentialTypePublicId !== this.typeFilter) {
+        return false;
+      }
+      if (q) {
+        const hay = [
+          this.getEmployeeName(c.employeePublicId),
+          this.getTypeName(c.credentialTypePublicId),
+          c.issuer
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (!hay.includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
   }
 
   getEmployeeName(publicId: string): string {
@@ -258,34 +294,23 @@ export class CredentialReviewComponent implements OnInit {
 
   openReview(credential: Credential): void {
     this.documentService.getByCredential(credential.publicId).subscribe({
-      next: (docs) => {
-        const dialogRef = this.dialog.open(CredentialReviewDialogComponent, {
-          width: '700px', maxWidth: '95vw',
-          data: {
-            credential,
-            documents: docs,
-            employeeName: this.getEmployeeName(credential.employeePublicId),
-            typeName: this.getTypeName(credential.credentialTypePublicId)
-          }
-        });
-        dialogRef.afterClosed().subscribe(result => {
-          if (result) this.loadData();
-        });
-      },
-      error: () => {
-        const dialogRef = this.dialog.open(CredentialReviewDialogComponent, {
-          width: '700px', maxWidth: '95vw',
-          data: {
-            credential,
-            documents: [],
-            employeeName: this.getEmployeeName(credential.employeePublicId),
-            typeName: this.getTypeName(credential.credentialTypePublicId)
-          }
-        });
-        dialogRef.afterClosed().subscribe(result => {
-          if (result) this.loadData();
-        });
+      next: (docs) => this.openReviewDialog(credential, docs),
+      error: () => this.openReviewDialog(credential, [])
+    });
+  }
+
+  private openReviewDialog(credential: Credential, documents: any[]): void {
+    const dialogRef = this.dialog.open(CredentialReviewDialogComponent, {
+      width: '700px', maxWidth: '95vw',
+      data: {
+        credential,
+        documents,
+        employeeName: this.getEmployeeName(credential.employeePublicId),
+        typeName: this.getTypeName(credential.credentialTypePublicId)
       }
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) this.loadData();
     });
   }
 }

@@ -19,6 +19,7 @@ import { Credential, CredentialStatus, CredentialType, CredentialUpsertRequest }
 import { AiExtractionResponse, DocumentResponse } from '../../../core/models/document.model';
 import { Employee } from '../../../core/models/employee.model';
 import { UPLOAD_ACCEPT, prepareFileForUpload } from '../../../core/utils/file-prep.util';
+import { toLocalIsoDate } from '../../../core/utils/date.util';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -540,6 +541,6 @@ export class CredentialFormDialogComponent {
   }
 
   private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    return toLocalIsoDate(date);
   }
 }

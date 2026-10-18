@@ -92,6 +92,11 @@ import { DocumentResponse } from '../../../core/models/document.model';
                     </button>
                   }
                 </div>
+                <div class="doc-meta">
+                  <mat-icon>cloud_upload</mat-icon>
+                  <span>{{ 'credentials.reviewDialog.uploadedBy' | transloco: { name: doc.uploadedByName || ('common.unknown' | transloco) } }}
+                    · {{ doc.createdAt | date:'medium' }}</span>
+                </div>
               </div>
             }
           } @else {
@@ -150,6 +155,11 @@ import { DocumentResponse } from '../../../core/models/document.model';
       gap: 4px; margin-top: 4px;
     }
     .doc-name { font-size: 12px; color: #999; }
+    .doc-meta {
+      display: flex; align-items: center; gap: 5px; justify-content: center;
+      margin-top: 6px; font-size: 12px; color: #777;
+    }
+    .doc-meta mat-icon { font-size: 15px; width: 15px; height: 15px; color: #9aa4b2; }
     .file-placeholder {
       padding: 32px; background: #f5f5f5; border-radius: 8px; text-align: center;
       cursor: pointer;

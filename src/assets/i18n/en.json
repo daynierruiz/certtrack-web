@@ -20,6 +20,8 @@
       "addressRequired": "Please select your address from the suggestions",
       "addressIncomplete": "Selected address is missing city, state, postal code, or country. Try a more specific address.",
       "aptSuite": "Apt / Suite (optional)",
+      "nextStepInfo": "We've received your application — but you're not done yet. Our team will review it, and if you're approved you'll receive an email or message with a link to create your account and upload your documents. You don't need to upload anything right now.",
+      "nextStepTitle": "You're not done yet — what happens next",
       "submitBtn": "Submit Application",
       "submitError": "An error occurred. Please try again.",
       "subtitle": "Employment Application",
@@ -56,6 +58,16 @@
       },
       "rejectError": "Failed to reject",
       "rejectedSnack": "Applicant rejected.",
+      "removeBtn": "Remove",
+      "resendBtn": "Resend setup link",
+      "resendSnack": "Setup link re-sent to {{email}}",
+      "resendError": "Could not resend the setup link",
+      "searchLabel": "Search",
+      "searchPlaceholder": "Name, email, school or position…",
+      "filterAll": "All statuses",
+      "filterAllPositions": "All positions",
+      "noMatches": "No applicants match your filters",
+      "viewProfile": "View profile",
       "status": {
         "ACTIVE": "Active",
         "APPLICANT": "Applicant",
@@ -80,6 +92,25 @@
       "subtitle": "Set Up Your Password",
       "validating": "Validating your link...",
       "welcome": "Welcome, {{email}}! Create a password to access your portal."
+    }
+  },
+  "invitation": {
+    "register": {
+      "confirmPassword": "Confirm Password",
+      "createBtn": "Create Account & Sign In",
+      "fullName": "Full Name",
+      "gotIt": "Got it",
+      "invalidLink": "Invalid or expired invitation.",
+      "invalidLinkTitle": "Invalid or Expired Invitation",
+      "noToken": "No invitation token provided.",
+      "password": "Password",
+      "passwordHint": "At least 8 characters",
+      "passwordMismatch": "Passwords do not match.",
+      "signedInSnack": "You're signed in! To return later, sign in at this site with your email and password.",
+      "submitError": "Failed to create your account. Please try again.",
+      "subtitle": "Create Your Account",
+      "validating": "Validating your invitation...",
+      "welcome": "Welcome! You've been invited to join {{agencyName}} as {{email}}. Create your account to get started."
     }
   },
   "auth": {
@@ -127,6 +158,7 @@
     "submit": "Submit",
     "success": "Success",
     "type": "Type",
+    "unknown": "Unknown",
     "unsupportedFileType": "Unsupported file format. Please use JPEG, PNG, WebP, or PDF.",
     "update": "Update",
     "upload": "Upload",
@@ -210,6 +242,56 @@
       "title": "Contract Templates"
     }
   },
+  "account": {
+    "agency": "Agency",
+    "changePassword": "Change Password",
+    "confirmPassword": "Confirm new password",
+    "currentPassword": "Current password",
+    "email": "Email",
+    "fullName": "Full name",
+    "newPassword": "New password",
+    "passwordChanged": "Password changed.",
+    "passwordsNoMatch": "The new passwords don't match.",
+    "passwordTooShort": "The new password must be at least 8 characters.",
+    "profile": "Profile",
+    "profileSaved": "Profile updated.",
+    "role": "Role",
+    "saveError": "Couldn't save. Please try again.",
+    "saveProfile": "Save profile",
+    "title": "My Account",
+    "updatePassword": "Update password"
+  },
+  "cora": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "collapse": "Shrink window",
+    "excel": "Excel",
+    "expand": "Enlarge window",
+    "exportError": "Couldn't generate the file. Please try again.",
+    "exportExcel": "Download as Excel (CSV)",
+    "exportPdf": "Download as PDF",
+    "exportTitle": "CareReady — Cora",
+    "pdf": "PDF",
+    "disclaimer": "Cora can look things up but can't make changes yet.",
+    "emailConfirm": "Send this report to",
+    "emailError": "Couldn't send the email. Please try again.",
+    "emailSent": "Report sent to {{to}}.",
+    "error": "Sorry, something went wrong. Please try again.",
+    "listening": "Listening...",
+    "mic": "Speak",
+    "micDenied": "Microphone access was blocked. Enable it in your browser to use voice.",
+    "micError": "Couldn't hear that. Please try again.",
+    "placeholder": "Ask about credentials, employees, risk...",
+    "send": "Send",
+    "sendEmail": "Send",
+    "thinking": "Thinking...",
+    "title": "Cora — Assistant",
+    "toggle": "Open assistant",
+    "voiceOff": "Turn off voice replies",
+    "yourEmail": "your email",
+    "voiceOn": "Turn on voice replies",
+    "welcome": "Hi, I'm Cora. Ask me about your agency — expiring credentials, pending reviews, who's at risk, or your compliance summary."
+  },
   "credentials": {
     "form": {
       "addMoreImages": "Add more images",
@@ -277,8 +359,12 @@
     },
     "review": {
       "allCaughtUp": "No credentials pending review. All caught up!",
+      "filterAllTypes": "All types",
+      "noMatches": "No pending reviews match your filters",
       "pendingBadge": "{{count}} pending",
       "reviewBtn": "Review",
+      "searchLabel": "Search",
+      "searchPlaceholder": "Employee, credential type or issuer…",
       "submitted": "Submitted",
       "title": "Pending Review"
     },
@@ -300,7 +386,8 @@
       "reviewError": "Error reviewing credential",
       "reviewNotesLabel": "Review Notes (optional)",
       "reviewNotesPlaceholder": "Add notes about your decision...",
-      "title": "Review Credential"
+      "title": "Review Credential",
+      "uploadedBy": "Uploaded by {{name}}"
     },
     "status": {
       "CRITICAL": "Critical",
@@ -337,6 +424,13 @@
       "tooltipValid": "View valid credentials",
       "valid": "Valid"
     },
+    "pendingApplicants": {
+      "title": "Applicants awaiting approval",
+      "subtitle": "Approve to let them set a password and upload their documents",
+      "approve": "Approve",
+      "approved": "{{name}} approved — they can now upload their documents",
+      "approveError": "Could not approve the applicant. Please try again."
+    },
     "pipeline": {
       "active": "Active",
       "applicants": "Applicants",
@@ -344,8 +438,13 @@
       "title": "Onboarding Pipeline"
     },
     "riskCaregivers": {
-      "subtitle": "Highest-risk caregivers based on credentials and position requirements",
-      "title": "AI Risk Watchlist"
+      "subtitle": "Prioritized by compliance gaps — tap a caregiver to view their profile",
+      "title": "Caregivers needing attention",
+      "levelRED": "Urgent",
+      "levelORANGE": "Attention",
+      "levelYELLOW": "Watch",
+      "levelGREEN": "OK",
+      "seeAll": "See all"
     },
     "roleEligibility": {
       "assigned": "{{count}} assigned",
@@ -437,6 +536,7 @@
       "EXPIRED": "Expired",
       "EXPIRING_SOON": "Expiring Soon",
       "PENDING_REVIEW": "Pending Review",
+      "REJECTED": "Rejected",
       "SUPERSEDED": "Superseded",
       "VALID": "Valid"
     },
@@ -719,6 +819,7 @@
       "NOT_ELIGIBLE": "Blocked",
       "PARTIALLY_ELIGIBLE": "At Risk",
       "PENDING_REVIEW": "Pending Review",
+      "REJECTED": "Rejected",
       "SUPERSEDED": "Superseded",
       "VALID": "Valid",
       "ACTIVE": "Active",
@@ -763,10 +864,33 @@
     "credentials": "Credentials",
     "dashboard": "Dashboard",
     "employees": "Employees",
+    "map": "Map",
+    "myAccount": "My Account",
     "myProfile": "My Profile",
     "pendingReview": "Pending Review",
     "positions": "Positions",
+    "reports": "Reports",
     "signOut": "Sign Out"
+  },
+  "map": {
+    "title": "Caregiver Map",
+    "subtitle": "Where your caregivers and applicants live",
+    "searchLabel": "Search",
+    "searchPlaceholder": "Name or city…",
+    "languages": "Languages",
+    "position": "Position",
+    "clear": "Clear filters",
+    "serviceArea": "Service area (Miami-Dade · Broward · Palm Beach)",
+    "showing": "Showing {{shown}} of {{total}}",
+    "noLocation": "{{count}} without a mapped address",
+    "noLocationHint": "These have no saved coordinates, so they can't be placed on the map.",
+    "status": {
+      "ACTIVE": "Active",
+      "ONBOARDING": "Onboarding",
+      "APPLICANT": "Applicant",
+      "INACTIVE": "Inactive",
+      "TERMINATED": "Terminated"
+    }
   },
   "positions": {
     "detail": {
@@ -827,10 +951,25 @@
       "viewEligibility": "View Eligibility"
     }
   },
+  "reports": {
+    "title": "Reports",
+    "pdf": "Download PDF",
+    "csv": "Download CSV",
+    "error": "Couldn't generate the report. Please try again.",
+    "compliance": {
+      "title": "Compliance report",
+      "desc": "Audit-ready snapshot: every employee's required credentials, what's met, missing or expired. Export as PDF (print) or CSV (spreadsheet)."
+    }
+  },
+  "risk": {
+    "title": "Caregivers needing attention",
+    "empty": "No caregivers currently at risk."
+  },
   "roles": {
     "ADMIN": "Admin",
     "EMPLOYEE": "Employee",
-    "OWNER": "Owner"
+    "OWNER": "Owner",
+    "VIEWER": "Viewer"
   },
   "settings": {
     "agent": {
@@ -847,7 +986,12 @@
       "loadFailed": "Could not load agency settings",
       "saveSuccess": "Settings saved",
       "saveFailed": "Could not save settings",
-      "previewFailed": "Preview failed"
+      "previewFailed": "Preview failed",
+      "contactTitle": "Agency contact email",
+      "contactHelp": "Replies to the emails we send on your agency's behalf (approvals, resets, credential alerts, reports) go to this address. Leave blank to use the platform default.",
+      "contactLabel": "Contact email",
+      "contactPlaceholder": "e.g. office@youragency.com",
+      "contactSave": "Save email"
     }
   }
 }

@@ -17,6 +17,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/applicant/set-password/set-password.component').then(m => m.SetPasswordComponent)
   },
   {
+    path: 'register',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
+  },
+  {
     path: 'login',
     canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
@@ -63,6 +68,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/applicant/applicant-list/applicant-list.component').then(m => m.ApplicantListComponent)
       },
       {
+        path: 'map',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/map/employee-map.component').then(m => m.EmployeeMapComponent)
+      },
+      {
         path: 'contract-templates',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/contracts/contract-template-list/contract-template-list.component').then(m => m.ContractTemplateListComponent)
@@ -76,6 +86,20 @@ export const routes: Routes = [
         path: 'settings/agent',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/settings/agent-settings/agent-settings.component').then(m => m.AgentSettingsComponent)
+      },
+      {
+        path: 'account',
+        loadComponent: () => import('./features/account/account.component').then(m => m.AccountComponent)
+      },
+      {
+        path: 'risk',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/risk/risk-list.component').then(m => m.RiskListComponent)
+      },
+      {
+        path: 'reports',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/reports/reports.component').then(m => m.ReportsComponent)
       }
     ]
   },

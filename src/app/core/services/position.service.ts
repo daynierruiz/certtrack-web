@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { Page } from '../models/page.model';
 import {
   PositionResponse,
@@ -12,7 +13,7 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class PositionService {
-  private readonly baseUrl = '/api/positions';
+  private readonly baseUrl = `${environment.apiUrl}/positions`;
 
   constructor(private http: HttpClient) {}
 

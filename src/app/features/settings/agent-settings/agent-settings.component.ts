@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
@@ -19,7 +20,7 @@ import { AgencyResponse, AgentBriefingResponse } from '../../../core/models/agen
   standalone: true,
   imports: [
     CommonModule, FormsModule, TranslocoModule,
-    MatCardModule, MatSlideToggleModule, MatSelectModule, MatFormFieldModule,
+    MatCardModule, MatSlideToggleModule, MatSelectModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatProgressSpinnerModule
   ],
   template: `
@@ -30,6 +31,29 @@ import { AgencyResponse, AgentBriefingResponse } from '../../../core/models/agen
       @if (loading) {
         <div class="center"><mat-spinner diameter="32"></mat-spinner></div>
       } @else if (agency) {
+        <mat-card class="card" style="margin-bottom: 16px;">
+          <mat-card-content>
+            <h3>{{ 'settings.agent.contactTitle' | transloco }}</h3>
+            <p class="muted">{{ 'settings.agent.contactHelp' | transloco }}</p>
+            <div class="contact-row">
+              <mat-form-field appearance="outline" class="contact-field">
+                <mat-label>{{ 'settings.agent.contactLabel' | transloco }}</mat-label>
+                <input matInput type="email" [(ngModel)]="contactEmail"
+                       [placeholder]="'settings.agent.contactPlaceholder' | transloco"
+                       autocomplete="email">
+              </mat-form-field>
+              <button mat-flat-button color="primary"
+                      [disabled]="savingContact"
+                      (click)="saveContactEmail()">
+                @if (savingContact) {
+                  <mat-spinner diameter="16" style="display:inline-block; vertical-align: middle; margin-right: 8px;"></mat-spinner>
+                }
+                {{ 'settings.agent.contactSave' | transloco }}
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
         <mat-card class="card">
           <mat-card-content>
             <div class="row">
@@ -92,6 +116,9 @@ import { AgencyResponse, AgentBriefingResponse } from '../../../core/models/agen
     .row h3 { margin: 0 0 4px; font-size: 16px; color: #333; }
     .muted { margin: 0; color: #777; font-size: 13px; }
     .actions { margin-top: 24px; display: flex; gap: 12px; }
+    .contact-row { display: flex; align-items: flex-start; gap: 12px; margin-top: 12px; }
+    .contact-field { flex: 1; }
+    .card h3 { margin: 0 0 4px; font-size: 16px; color: #333; }
     .preview { margin-top: 24px; padding: 16px; background: #f5f7fa; border-radius: 8px; border-left: 4px solid #00796b; }
     .preview h4 { margin: 0 0 6px; color: #004d40; }
     .preview .meta { color: #777; font-size: 12px; margin-bottom: 10px; }
@@ -107,7 +134,9 @@ export class AgentSettingsComponent implements OnInit {
 
   loading = true;
   previewing = false;
+  savingContact = false;
   agency: AgencyResponse | null = null;
+  contactEmail = '';
   briefingEnabled = false;
   briefingLanguage: 'en' | 'es' = 'en';
   preview: AgentBriefingResponse | null = null;
@@ -116,11 +145,32 @@ export class AgentSettingsComponent implements OnInit {
     this.agencyService.getOwn().subscribe({
       next: a => {
         this.agency = a;
+        this.contactEmail = a.contactEmail ?? '';
         this.briefingEnabled = a.briefingEnabled;
         this.briefingLanguage = a.briefingLanguage;
         this.loading = false;
       },
       error: () => { this.loading = false; this.toast.error(this.transloco.translate('settings.agent.loadFailed')); }
+    });
+  }
+
+  saveContactEmail(): void {
+    if (!this.agency) return;
+    const trimmed = this.contactEmail.trim();
+    this.savingContact = true;
+    this.agencyService.updateContactEmail(this.agency.publicId, {
+      contactEmail: trimmed.length ? trimmed : null
+    }).subscribe({
+      next: a => {
+        this.agency = a;
+        this.contactEmail = a.contactEmail ?? '';
+        this.savingContact = false;
+        this.toast.success(this.transloco.translate('settings.agent.saveSuccess'));
+      },
+      error: () => {
+        this.savingContact = false;
+        this.toast.error(this.transloco.translate('settings.agent.saveFailed'));
+      }
     });
   }
 

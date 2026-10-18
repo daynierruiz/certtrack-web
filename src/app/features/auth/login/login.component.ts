@@ -157,7 +157,12 @@ export class LoginComponent implements OnInit {
             const target = me.role === 'EMPLOYEE' ? '/my-profile' : '/dashboard';
             this.router.navigate([target]);
           },
-          error: () => this.router.navigate(['/dashboard'])
+          error: (err) => {
+            // Without the user profile every guarded route bounces between
+            // guards — treat this as a failed login instead of navigating.
+            this.loading = false;
+            this.errorMessage = err.error?.message || this.transloco.translate('auth.invalidCredentials');
+          }
         });
       },
       error: (err) => {

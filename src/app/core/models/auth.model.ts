@@ -33,3 +33,10 @@ export interface MeResponse {
 export interface RefreshRequest {
   refreshToken: string;
 }
+
+export interface InvitationTokenResponse {
+  email: string;
+  agencyPublicId: string;
+  agencyName: string;
+  role: string;
+}

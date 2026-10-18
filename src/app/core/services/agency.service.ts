@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AgencyBriefingSettingsRequest, AgencyResponse } from '../models/agency.model';
+import { AgencyBriefingSettingsRequest, AgencyContactSettingsRequest, AgencyResponse } from '../models/agency.model';
 
 @Injectable({ providedIn: 'root' })
 export class AgencyService {
@@ -17,5 +17,10 @@ export class AgencyService {
   updateBriefingSettings(publicId: string,
                          request: AgencyBriefingSettingsRequest): Observable<AgencyResponse> {
     return this.http.patch<AgencyResponse>(`${this.apiUrl}/${publicId}/briefing-settings`, request);
+  }
+
+  updateContactEmail(publicId: string,
+                     request: AgencyContactSettingsRequest): Observable<AgencyResponse> {
+    return this.http.patch<AgencyResponse>(`${this.apiUrl}/${publicId}/contact-email`, request);
   }
 }

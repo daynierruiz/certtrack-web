@@ -31,6 +31,26 @@ export interface Employee {
   positions?: EmployeePositionRef[];
 }
 
+/**
+ * Minimal employee projection for the map (audit M7). The backend /employees/map
+ * endpoint returns ONLY these fields — no street address, postal code, email, phone,
+ * codes, notes or dates — and never TERMINATED staff.
+ */
+export interface EmployeeMapPoint {
+  publicId: string;
+  firstName: string;
+  lastName: string;
+  status: EmployeeStatus;
+  languages: LanguageCode[];
+  positions?: EmployeePositionRef[];
+  address: {
+    city: string | null;
+    state: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
+}
+
 export interface EmployeeUpsertRequest {
   agencyPublicId: string;
   firstName: string;

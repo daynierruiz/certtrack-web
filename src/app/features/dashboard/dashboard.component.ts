@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
@@ -8,12 +8,15 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { TranslocoModule } from '@jsverse/transloco';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AgentService } from '../../core/services/agent.service';
+import { ApplicantService } from '../../core/services/applicant.service';
 import { DashboardResponse, UpcomingExpiration } from '../../core/models/dashboard.model';
+import { ApplicantResponse } from '../../core/models/applicant.model';
 import { PositionEligibilitySummaryDto } from '../../core/models/position.model';
 import { RiskScore } from '../../core/models/risk-score.model';
 import { environment } from '../../../environments/environment';
@@ -25,7 +28,7 @@ import { environment } from '../../../environments/environment';
     CommonModule,
     MatCardModule, MatIconModule, MatTableModule,
     MatChipsModule, MatButtonModule, MatProgressSpinnerModule,
-    MatTooltipModule, TranslocoModule
+    MatTooltipModule, TranslocoModule, RouterLink
   ],
   template: `
     @if (loading) {
@@ -70,6 +73,33 @@ import { environment } from '../../../environments/environment';
                   <mat-icon class="action-icon applicant">person_add</mat-icon>
                   <span class="action-text"><strong>{{ data.employees.applicants }}</strong> {{ (data.employees.applicants === 1 ? 'dashboard.actionRequired.applicantsToReviewOne' : 'dashboard.actionRequired.applicantsToReviewMany') | transloco }}</span>
                   <mat-icon class="action-arrow">chevron_right</mat-icon>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Row 1.5: Applicants pending approval — approve inline, no navigation -->
+      @if (pendingApplicants.length > 0) {
+        <mat-card class="pending-applicants">
+          <mat-card-header>
+            <mat-icon class="section-title-icon">how_to_reg</mat-icon>
+            <mat-card-title>{{ 'dashboard.pendingApplicants.title' | transloco }}</mat-card-title>
+            <mat-card-subtitle>{{ 'dashboard.pendingApplicants.subtitle' | transloco }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="applicant-list">
+              @for (a of pendingApplicants; track a.publicId) {
+                <div class="applicant-row">
+                  <div class="applicant-info clickable" (click)="navigate('/applicants')">
+                    <div class="applicant-name">{{ a.firstName }} {{ a.lastName }}</div>
+                    <div class="applicant-meta">{{ a.positionName }}<span *ngIf="a.applicationDate"> · {{ a.applicationDate }}</span></div>
+                  </div>
+                  <button mat-flat-button color="primary"
+                          [disabled]="approvingId === a.publicId" (click)="approveApplicant(a)">
+                    <mat-icon>check</mat-icon> {{ 'dashboard.pendingApplicants.approve' | transloco }}
+                  </button>
                 </div>
               }
             </div>
@@ -262,14 +292,24 @@ import { environment } from '../../../environments/environment';
               @for (r of riskCaregivers; track r.employeePublicId) {
                 <div class="risk-row clickable" (click)="navigate('/employees/' + r.employeePublicId)"
                      [matTooltip]="riskTooltip(r)" matTooltipClass="risk-factors-tooltip">
-                  <span class="risk-chip" [class]="'level-' + r.level">{{ r.score }}</span>
+                  <span class="risk-chip" [class]="'level-' + r.level"
+                        [matTooltip]="'dashboard.riskCaregivers.level' + r.level | transloco">{{ r.score }}</span>
                   <div class="risk-info">
-                    <div class="risk-name">{{ r.employeeName }}</div>
+                    <div class="risk-name">
+                      {{ r.employeeName }}
+                      <span class="risk-level-tag" [class]="'level-' + r.level">{{ ('dashboard.riskCaregivers.level' + r.level) | transloco }}</span>
+                    </div>
                     <div class="risk-reason">{{ r.factors[0]?.description }}</div>
                   </div>
                   <mat-icon class="risk-arrow">chevron_right</mat-icon>
                 </div>
               }
+            </div>
+            <div class="risk-see-all">
+              <a mat-button color="primary" routerLink="/risk">
+                {{ 'dashboard.riskCaregivers.seeAll' | transloco }}
+                <mat-icon>arrow_forward</mat-icon>
+              </a>
             </div>
           </mat-card-content>
         </mat-card>
@@ -394,7 +434,21 @@ import { environment } from '../../../environments/environment';
 
     /* Pipeline card (compact) */
     .pipeline-card { margin-bottom: 20px; }
-    .section-title-icon { color: #1565c0; margin-right: 8px; }
+    .section-title-icon { color: #1565c0; margin-right: 8px; flex: 0 0 auto; }
+    /* Pending applicants (inline approve) */
+    .pending-applicants { margin-bottom: 20px; border-left: 4px solid #2e7d32; }
+    .applicant-list { display: flex; flex-direction: column; gap: 6px; padding-top: 8px; }
+    .applicant-row { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px solid #f0f0f0; }
+    .applicant-info { flex: 1; min-width: 0; }
+    .applicant-info.clickable { cursor: pointer; }
+    .applicant-name { font-weight: 600; font-size: 14px; color: #333; }
+    .applicant-meta { font-size: 13px; color: #777; }
+    .applicant-row button mat-icon { margin-right: 4px; }
+    @media (max-width: 600px) {
+      .applicant-row { flex-wrap: wrap; }
+      .applicant-row button { width: 100%; }
+    }
+    .mat-mdc-card-header { align-items: center; }
     .pipeline-row-compact {
       display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
     }
@@ -500,6 +554,15 @@ import { environment } from '../../../environments/environment';
     .risk-chip.level-GREEN { background: #2e7d32; }
     .risk-info { flex: 1; min-width: 0; }
     .risk-name { font-weight: 600; font-size: 14px; color: #333; }
+    .risk-level-tag {
+      font-size: 11px; font-weight: 600; margin-left: 6px; padding: 1px 7px;
+      border-radius: 10px; color: #fff; vertical-align: middle;
+    }
+    .risk-level-tag.level-RED { background: #c62828; }
+    .risk-level-tag.level-ORANGE { background: #ef6c00; }
+    .risk-level-tag.level-YELLOW { background: #f9a825; color: #333; }
+    .risk-level-tag.level-GREEN { background: #2e7d32; }
+    .risk-see-all { display: flex; justify-content: flex-end; padding-top: 6px; }
     .risk-reason {
       font-size: 12px; color: #666;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -512,19 +575,31 @@ import { environment } from '../../../environments/environment';
     .actions-row { display: flex; gap: 12px; flex-wrap: wrap; }
     .actions-row button mat-icon { margin-right: 4px; }
 
+    /* Prevent flex children from overflowing/clipping their text. */
+    .stat-info { min-width: 0; }
+    .stat-value { white-space: nowrap; }
+    .stat-label, .stat-detail { overflow-wrap: anywhere; }
+    .action-required-header { flex-wrap: wrap; }
+
     /* Mobile */
     @media (max-width: 600px) {
+      /* Leave room at the bottom so the floating Cora button doesn't cover the
+         last section's corner. */
+      :host { display: block; overflow-x: hidden; padding-bottom: 88px; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
       .stat-card mat-card-content { padding: 12px !important; gap: 10px; }
       .stat-value { font-size: 22px; }
       .stat-label { font-size: 12px; }
-      .stat-icon { width: 40px; height: 40px; }
+      .stat-detail { font-size: 11px; }
+      .stat-icon { width: 40px; height: 40px; flex: 0 0 auto; }
       .stat-icon mat-icon { font-size: 22px; width: 22px; height: 22px; }
       .section-grid { grid-template-columns: 1fr; }
-      .status-label { width: 90px; }
-      .position-elig-grid { grid-template-columns: 1fr 1fr; }
+      .status-label { width: 84px; }
+      .position-elig-grid { grid-template-columns: 1fr; }
       .pipeline-row-compact { flex-direction: column; align-items: flex-start; }
       .pipeline-chips { width: 100%; justify-content: center; }
+      /* Comfortable tap size + no sideways clipping for the risk rows. */
+      .risk-reason { white-space: normal; }
     }
   `]
 })
@@ -535,6 +610,8 @@ export class DashboardComponent implements OnInit {
   displayedColumns = ['employeeName', 'credentialTypeName', 'expirationDate', 'daysUntilExpiry'];
 
   riskCaregivers: RiskScore[] = [];
+  pendingApplicants: ApplicantResponse[] = [];
+  approvingId: string | null = null;
   readonly agentVisible = environment.agentEnabled;
 
   private readonly desktopColumns = ['employeeName', 'credentialTypeName', 'expirationDate', 'daysUntilExpiry'];
@@ -546,6 +623,9 @@ export class DashboardComponent implements OnInit {
     private dashboardService: DashboardService,
     private authService: AuthService,
     private agentService: AgentService,
+    private applicantService: ApplicantService,
+    private snackBar: MatSnackBar,
+    private transloco: TranslocoService,
     private router: Router,
     private breakpointObserver: BreakpointObserver
   ) {
@@ -564,6 +644,8 @@ export class DashboardComponent implements OnInit {
       error: () => { this.loading = false; }
     });
 
+    this.loadPendingApplicants();
+
     if (this.agentVisible) {
       this.agentService.listRiskScores(agencyId).subscribe({
         next: scores => {
@@ -576,6 +658,36 @@ export class DashboardComponent implements OnInit {
         error: () => { this.riskCaregivers = []; }
       });
     }
+  }
+
+  private loadPendingApplicants(): void {
+    this.applicantService.listApplicants().subscribe({
+      // Only those still awaiting approval (APPLICANT); ONBOARDING are already approved.
+      next: list => { this.pendingApplicants = list.filter(a => a.status === 'APPLICANT'); },
+      error: () => { this.pendingApplicants = []; }
+    });
+  }
+
+  approveApplicant(a: ApplicantResponse): void {
+    if (this.approvingId) {
+      return;
+    }
+    this.approvingId = a.publicId;
+    this.applicantService.approve(a.publicId).subscribe({
+      next: () => {
+        this.approvingId = null;
+        this.pendingApplicants = this.pendingApplicants.filter(p => p.publicId !== a.publicId);
+        this.snackBar.open(
+          this.transloco.translate('dashboard.pendingApplicants.approved', { name: a.firstName }),
+          'OK', { duration: 3000 });
+      },
+      error: err => {
+        this.approvingId = null;
+        this.snackBar.open(
+          err?.error?.message ?? this.transloco.translate('dashboard.pendingApplicants.approveError'),
+          'OK', { duration: 5000 });
+      }
+    });
   }
 
   get actionRequiredCount(): number {

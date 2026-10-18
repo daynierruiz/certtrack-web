@@ -123,7 +123,7 @@ import {
                   </mat-select>
                 </mat-form-field>
 
-                <mat-form-field appearance="outline" class="full-width">
+                <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
                   <mat-label>{{ 'applicant.apply.languages' | transloco }}</mat-label>
                   <mat-select [(ngModel)]="languages" name="languages" multiple required>
                     @for (lang of languageOptions; track lang.value) {
@@ -141,7 +141,7 @@ import {
                   </mat-form-field>
                 }
 
-                <mat-form-field appearance="outline" class="full-width">
+                <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
                   <mat-label>{{ 'applicant.apply.school' | transloco }}</mat-label>
                   <input matInput [(ngModel)]="schoolName" name="schoolName"
                          required maxlength="255"
@@ -150,7 +150,7 @@ import {
                   <mat-hint>{{ 'applicant.apply.schoolHint' | transloco }}</mat-hint>
                 </mat-form-field>
 
-                <mat-form-field appearance="outline" class="full-width">
+                <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
                   <mat-label>{{ 'applicant.apply.address' | transloco }}</mat-label>
                   <input matInput
                          name="addressSearch"
@@ -217,9 +217,17 @@ import {
               <mat-icon class="success-icon">check_circle</mat-icon>
               <h2>{{ 'applicant.apply.successTitle' | transloco }}</h2>
               <p>{{ 'applicant.apply.successThankYou' | transloco: { name: firstName } }}</p>
-              <p class="sub-text">
-                {{ 'applicant.apply.successInfo' | transloco }}
-              </p>
+
+              <!-- Make it clear the process is NOT finished: they must wait for
+                   approval, then they'll get a link to create their account and
+                   upload their documents. -->
+              <div class="next-step">
+                <div class="next-step-label">
+                  <mat-icon>schedule</mat-icon>
+                  <strong>{{ 'applicant.apply.nextStepTitle' | transloco }}</strong>
+                </div>
+                <p class="sub-text">{{ 'applicant.apply.nextStepInfo' | transloco }}</p>
+              </div>
             </div>
           </mat-card-content>
         }
@@ -336,6 +344,12 @@ import {
       font-size: 14px;
       line-height: 1.6;
     }
+    .next-step {
+      margin-top: 16px; padding: 16px; border: 1px solid #bbdefb; border-radius: 10px;
+      background: #eef4ff; text-align: left;
+    }
+    .next-step-label { display: flex; align-items: center; gap: 8px; color: #1565c0; margin-bottom: 6px; }
+    .next-step button { margin-top: 8px; width: 100%; }
     .suggestion { display: flex; flex-direction: column; line-height: 1.3; }
     .suggestion-line2 { font-size: 12px; color: #666; }
     .hp-field {
@@ -494,6 +508,7 @@ export class ApplyComponent implements OnInit {
 
     this.applicantService.register({
       agencySlug: this.agencySlug,
+      applyLinkKey: this.applyLinkKey || undefined,
       firstName: this.firstName,
       lastName: this.lastName,
       email: this.email,

@@ -4,6 +4,7 @@ export interface DocumentResponse {
   credentialPublicId: string | null;
   employeePublicId: string | null;
   uploadedByUserPublicId: string | null;
+  uploadedByName: string | null;
   originalFilename: string;
   storageKey: string;
   contentType: string;

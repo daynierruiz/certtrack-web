@@ -23,6 +23,7 @@ import { Employee, EmployeeUpsertRequest } from '../../../core/models/employee.m
 import { LANGUAGE_OPTIONS, LanguageCode } from '../../../core/models/applicant.model';
 import { GeoapifyFeature } from '../../../core/models/address.model';
 import { PositionResponse } from '../../../core/models/position.model';
+import { toLocalIsoDate } from '../../../core/utils/date.util';
 
 @Component({
   selector: 'app-employee-form-dialog',
@@ -469,7 +470,7 @@ export class EmployeeFormDialogComponent implements OnInit {
   }
 
   private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    return toLocalIsoDate(date);
   }
 
   private formatAddress(a: NonNullable<Employee['address']>): string {

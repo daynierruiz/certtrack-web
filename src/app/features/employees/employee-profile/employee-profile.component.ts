@@ -313,6 +313,9 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
                                       <mat-icon class="doc-icon">{{ getFileIcon(doc.contentType) }}</mat-icon>
                                       <span class="doc-name">{{ doc.originalFilename }}</span>
                                       <span class="doc-size">{{ formatSize(doc.sizeBytes) }}</span>
+                                      <span class="doc-by" [matTooltip]="'credentials.reviewDialog.uploadedBy' | transloco: { name: doc.uploadedByName || ('common.unknown' | transloco) }">
+                                        · {{ doc.uploadedByName || ('common.unknown' | transloco) }} · {{ doc.createdAt | date:'shortDate' }}
+                                      </span>
                                       <button mat-icon-button [matTooltip]="'common.view' | transloco"
                                               (click)="viewDocument(doc); $event.stopPropagation()">
                                         <mat-icon>open_in_new</mat-icon>
@@ -417,6 +420,9 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
                                     <mat-icon class="doc-icon">{{ getFileIcon(doc.contentType) }}</mat-icon>
                                     <span class="doc-name">{{ doc.originalFilename }}</span>
                                     <span class="doc-size">{{ formatSize(doc.sizeBytes) }}</span>
+                                      <span class="doc-by" [matTooltip]="'credentials.reviewDialog.uploadedBy' | transloco: { name: doc.uploadedByName || ('common.unknown' | transloco) }">
+                                        · {{ doc.uploadedByName || ('common.unknown' | transloco) }} · {{ doc.createdAt | date:'shortDate' }}
+                                      </span>
                                     <button mat-icon-button [matTooltip]="'common.view' | transloco"
                                             (click)="viewDocument(doc); $event.stopPropagation()">
                                       <mat-icon>open_in_new</mat-icon>
@@ -474,6 +480,9 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
                                     <mat-icon class="doc-icon">{{ getFileIcon(doc.contentType) }}</mat-icon>
                                     <span class="doc-name">{{ doc.originalFilename }}</span>
                                     <span class="doc-size">{{ formatSize(doc.sizeBytes) }}</span>
+                                      <span class="doc-by" [matTooltip]="'credentials.reviewDialog.uploadedBy' | transloco: { name: doc.uploadedByName || ('common.unknown' | transloco) }">
+                                        · {{ doc.uploadedByName || ('common.unknown' | transloco) }} · {{ doc.createdAt | date:'shortDate' }}
+                                      </span>
                                     <button mat-icon-button [matTooltip]="'common.view' | transloco" (click)="viewDocument(doc)">
                                       <mat-icon>open_in_new</mat-icon>
                                     </button>
@@ -875,6 +884,8 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
     .doc-icon { font-size: 18px; width: 18px; height: 18px; color: #666; }
     .doc-name { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .doc-size { font-size: 11px; color: #999; }
+    .doc-by { font-size: 11px; color: #9aa4b2; white-space: nowrap; flex: 0 0 auto; }
+    @media (max-width: 600px) { .doc-by { display: none; } }
 
     /* Positions */
     .position-card { margin-bottom: 12px; padding: 16px !important; }

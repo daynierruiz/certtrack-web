@@ -21,6 +21,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { forkJoin } from 'rxjs';
+import { toLocalIsoDate } from '../../../core/utils/date.util';
 
 export interface ContractGenerateData {
   employeePublicId: string;
@@ -487,9 +488,6 @@ export class ContractGenerateDialogComponent implements OnInit {
   }
 
   private formatDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return toLocalIsoDate(date);
   }
 }

@@ -578,9 +578,13 @@ export class EmployeeListComponent implements OnInit {
     const agencyId = this.authService.agencyPublicId();
     this.employeeService.getAll(agencyId, 0, 10000).subscribe({
       next: page => {
-        this.dataSource.data = page.content;
+        // Employees screen shows hired staff only — applicants/onboarding live on
+        // the Applicants screen, so exclude the hiring pipeline here.
+        const staff = page.content.filter(
+          e => e.status !== 'APPLICANT' && e.status !== 'ONBOARDING');
+        this.dataSource.data = staff;
         this.loading = false;
-        this.checkSelectedParam(page.content);
+        this.checkSelectedParam(staff);
       },
       error: () => { this.loading = false; }
     });

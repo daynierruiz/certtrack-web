@@ -16,6 +16,7 @@ import { MyProfileService } from '../../core/services/my-profile.service';
 import { DocumentService } from '../../core/services/document.service';
 import { AiExtractionResponse } from '../../core/models/document.model';
 import { UPLOAD_ACCEPT, prepareFileForUpload } from '../../core/utils/file-prep.util';
+import { toLocalIsoDate } from '../../core/utils/date.util';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -342,9 +343,6 @@ export class MyProfileUploadDialogComponent {
   }
 
   private formatDate(date: Date): string {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    return toLocalIsoDate(date);
   }
 }

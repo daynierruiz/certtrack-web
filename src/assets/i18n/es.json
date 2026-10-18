@@ -23,6 +23,8 @@
       "submitBtn": "Enviar Solicitud",
       "submitError": "Ocurrió un error. Por favor intente de nuevo.",
       "subtitle": "Solicitud de Empleo",
+      "nextStepInfo": "Hemos recibido su solicitud — pero aún no termina. Nuestro equipo la revisará y, si es aprobado, recibirá un correo o mensaje con un enlace para crear su cuenta y subir sus documentos. No necesita subir nada ahora.",
+      "nextStepTitle": "Aún no termina — qué sigue",
       "successInfo": "Recibirá un correo electrónico una vez que su solicitud sea revisada. Si es aprobada, recibirá un enlace para configurar su contraseña y acceder a su portal.",
       "successThankYou": "Gracias, {{name}}. Su solicitud ha sido recibida.",
       "successTitle": "¡Solicitud Enviada!"
@@ -56,6 +58,16 @@
       },
       "rejectError": "Error al rechazar",
       "rejectedSnack": "Solicitante rechazado/a.",
+      "removeBtn": "Quitar",
+      "resendBtn": "Reenviar enlace de configuración",
+      "resendSnack": "Enlace reenviado a {{email}}",
+      "resendError": "No se pudo reenviar el enlace",
+      "searchLabel": "Buscar",
+      "searchPlaceholder": "Nombre, correo, escuela o puesto…",
+      "filterAll": "Todos los estados",
+      "filterAllPositions": "Todos los puestos",
+      "noMatches": "Ningún solicitante coincide con los filtros",
+      "viewProfile": "Ver perfil",
       "status": {
         "ACTIVE": "Activo",
         "APPLICANT": "Solicitante",
@@ -80,6 +92,25 @@
       "subtitle": "Configure Su Contraseña",
       "validating": "Validando su enlace...",
       "welcome": "¡Bienvenido/a, {{email}}! Cree una contraseña para acceder a su portal."
+    }
+  },
+  "invitation": {
+    "register": {
+      "confirmPassword": "Confirmar Contraseña",
+      "createBtn": "Crear Cuenta e Iniciar Sesión",
+      "fullName": "Nombre Completo",
+      "gotIt": "Entendido",
+      "invalidLink": "Invitación inválida o expirada.",
+      "invalidLinkTitle": "Invitación Inválida o Expirada",
+      "noToken": "No se proporcionó token de invitación.",
+      "password": "Contraseña",
+      "passwordHint": "Al menos 8 caracteres",
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "signedInSnack": "¡Ha iniciado sesión! Para volver más tarde, inicie sesión en este sitio con su correo electrónico y contraseña.",
+      "submitError": "Error al crear su cuenta. Por favor intente de nuevo.",
+      "subtitle": "Cree Su Cuenta",
+      "validating": "Validando su invitación...",
+      "welcome": "¡Bienvenido/a! Ha sido invitado/a a unirse a {{agencyName}} como {{email}}. Cree su cuenta para comenzar."
     }
   },
   "auth": {
@@ -127,6 +158,7 @@
     "submit": "Enviar",
     "success": "Éxito",
     "type": "Tipo",
+    "unknown": "Desconocido",
     "unsupportedFileType": "Formato de archivo no compatible. Use JPEG, PNG, WebP o PDF.",
     "update": "Actualizar",
     "upload": "Subir",
@@ -210,6 +242,56 @@
       "title": "Plantillas de contrato"
     }
   },
+  "account": {
+    "agency": "Agencia",
+    "changePassword": "Cambiar contraseña",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "currentPassword": "Contraseña actual",
+    "email": "Correo",
+    "fullName": "Nombre completo",
+    "newPassword": "Nueva contraseña",
+    "passwordChanged": "Contraseña cambiada.",
+    "passwordsNoMatch": "Las nuevas contraseñas no coinciden.",
+    "passwordTooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+    "profile": "Perfil",
+    "profileSaved": "Perfil actualizado.",
+    "role": "Rol",
+    "saveError": "No se pudo guardar. Inténtalo de nuevo.",
+    "saveProfile": "Guardar perfil",
+    "title": "Mi cuenta",
+    "updatePassword": "Actualizar contraseña"
+  },
+  "cora": {
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "collapse": "Reducir ventana",
+    "excel": "Excel",
+    "expand": "Agrandar ventana",
+    "exportError": "No se pudo generar el archivo. Inténtalo de nuevo.",
+    "exportExcel": "Descargar como Excel (CSV)",
+    "exportPdf": "Descargar como PDF",
+    "exportTitle": "CareReady — Cora",
+    "pdf": "PDF",
+    "disclaimer": "Cora puede consultar información, pero aún no puede hacer cambios.",
+    "emailConfirm": "Enviar este informe a",
+    "emailError": "No se pudo enviar el correo. Inténtalo de nuevo.",
+    "emailSent": "Informe enviado a {{to}}.",
+    "error": "Lo siento, algo salió mal. Inténtalo de nuevo.",
+    "listening": "Escuchando...",
+    "mic": "Hablar",
+    "micDenied": "Se bloqueó el acceso al micrófono. Actívalo en tu navegador para usar la voz.",
+    "micError": "No pude escucharte. Inténtalo de nuevo.",
+    "placeholder": "Pregunta sobre credenciales, empleados, riesgo...",
+    "send": "Enviar",
+    "sendEmail": "Enviar",
+    "thinking": "Pensando...",
+    "title": "Cora — Asistente",
+    "toggle": "Abrir asistente",
+    "voiceOff": "Desactivar respuestas por voz",
+    "yourEmail": "tu correo",
+    "voiceOn": "Activar respuestas por voz",
+    "welcome": "Hola, soy Cora. Pregúntame sobre tu agencia — credenciales por vencer, revisiones pendientes, quién está en riesgo o el resumen de cumplimiento."
+  },
   "credentials": {
     "form": {
       "addMoreImages": "Agregar más imágenes",
@@ -277,8 +359,12 @@
     },
     "review": {
       "allCaughtUp": "No hay credenciales pendientes de revisión. ¡Todo al día!",
+      "filterAllTypes": "Todos los tipos",
+      "noMatches": "Ninguna revisión pendiente coincide con los filtros",
       "pendingBadge": "{{count}} pendiente(s)",
       "reviewBtn": "Revisar",
+      "searchLabel": "Buscar",
+      "searchPlaceholder": "Empleado, tipo de credencial o emisor…",
       "submitted": "Enviado",
       "title": "Revisión Pendiente"
     },
@@ -300,7 +386,8 @@
       "reviewError": "Error al revisar la credencial",
       "reviewNotesLabel": "Notas de revisión (opcional)",
       "reviewNotesPlaceholder": "Agregue notas sobre su decisión...",
-      "title": "Revisar Credencial"
+      "title": "Revisar Credencial",
+      "uploadedBy": "Subido por {{name}}"
     },
     "status": {
       "CRITICAL": "Crítico",
@@ -337,6 +424,13 @@
       "tooltipValid": "Ver credenciales vigentes",
       "valid": "Vigente"
     },
+    "pendingApplicants": {
+      "title": "Aplicantes por aprobar",
+      "subtitle": "Apruébalos para que puedan crear su contraseña y subir sus documentos",
+      "approve": "Aprobar",
+      "approved": "{{name}} aprobado — ya puede subir sus documentos",
+      "approveError": "No se pudo aprobar al aplicante. Inténtalo de nuevo."
+    },
     "pipeline": {
       "active": "Activos",
       "applicants": "Solicitantes",
@@ -344,8 +438,13 @@
       "title": "Proceso de Onboarding"
     },
     "riskCaregivers": {
-      "subtitle": "Caregivers con mayor riesgo según credenciales y requisitos del puesto",
-      "title": "Watchlist de Riesgo IA"
+      "subtitle": "Priorizados por huecos de cumplimiento — toca a un cuidador para ver su perfil",
+      "title": "Cuidadores que requieren atención",
+      "levelRED": "Urgente",
+      "levelORANGE": "Atención",
+      "levelYELLOW": "Vigilar",
+      "levelGREEN": "OK",
+      "seeAll": "Ver todos"
     },
     "roleEligibility": {
       "assigned": "{{count}} asignados",
@@ -437,6 +536,7 @@
       "EXPIRED": "Vencida",
       "EXPIRING_SOON": "Por vencer",
       "PENDING_REVIEW": "Revisión pendiente",
+      "REJECTED": "Rechazada",
       "SUPERSEDED": "Reemplazada",
       "VALID": "Vigente"
     },
@@ -719,6 +819,7 @@
       "NOT_ELIGIBLE": "Bloqueado",
       "PARTIALLY_ELIGIBLE": "En riesgo",
       "PENDING_REVIEW": "Revisión pendiente",
+      "REJECTED": "Rechazado",
       "SUPERSEDED": "Reemplazado",
       "VALID": "Vigente",
       "ACTIVE": "Activo",
@@ -763,10 +864,33 @@
     "credentials": "Credenciales",
     "dashboard": "Panel",
     "employees": "Empleados",
+    "map": "Mapa",
+    "myAccount": "Mi cuenta",
     "myProfile": "Mi perfil",
     "pendingReview": "Revisión pendiente",
     "positions": "Puestos",
+    "reports": "Reportes",
     "signOut": "Cerrar sesión"
+  },
+  "map": {
+    "title": "Mapa de cuidadores",
+    "subtitle": "Dónde viven tus cuidadores y solicitantes",
+    "searchLabel": "Buscar",
+    "searchPlaceholder": "Nombre o ciudad…",
+    "languages": "Idiomas",
+    "position": "Puesto",
+    "clear": "Limpiar filtros",
+    "serviceArea": "Área de servicio (Miami-Dade · Broward · Palm Beach)",
+    "showing": "Mostrando {{shown}} de {{total}}",
+    "noLocation": "{{count}} sin dirección en el mapa",
+    "noLocationHint": "No tienen coordenadas guardadas, así que no se pueden ubicar en el mapa.",
+    "status": {
+      "ACTIVE": "Activo",
+      "ONBOARDING": "Onboarding",
+      "APPLICANT": "Solicitante",
+      "INACTIVE": "Inactivo",
+      "TERMINATED": "Terminado"
+    }
   },
   "positions": {
     "detail": {
@@ -827,10 +951,25 @@
       "viewEligibility": "Ver Elegibilidad"
     }
   },
+  "reports": {
+    "title": "Reportes",
+    "pdf": "Descargar PDF",
+    "csv": "Descargar CSV",
+    "error": "No se pudo generar el reporte. Inténtalo de nuevo.",
+    "compliance": {
+      "title": "Reporte de cumplimiento",
+      "desc": "Resumen listo para auditoría: las credenciales requeridas de cada empleado, cuáles cumple, faltan o están vencidas. Expórtalo en PDF (imprimir) o CSV (hoja de cálculo)."
+    }
+  },
+  "risk": {
+    "title": "Cuidadores que requieren atención",
+    "empty": "Ningún cuidador en riesgo por ahora."
+  },
   "roles": {
     "ADMIN": "Administrador",
     "EMPLOYEE": "Empleado",
-    "OWNER": "Propietario"
+    "OWNER": "Propietario",
+    "VIEWER": "Visualizador"
   },
   "settings": {
     "agent": {
@@ -847,7 +986,12 @@
       "loadFailed": "No se pudo cargar la configuración de la agencia",
       "saveSuccess": "Configuración guardada",
       "saveFailed": "No se pudo guardar la configuración",
-      "previewFailed": "La vista previa falló"
+      "previewFailed": "La vista previa falló",
+      "contactTitle": "Email de contacto de la agencia",
+      "contactHelp": "Las respuestas a los correos que enviamos en nombre de su agencia (aprobaciones, restablecimientos, alertas de credenciales, reportes) llegarán a esta dirección. Déjelo en blanco para usar la dirección por defecto de la plataforma.",
+      "contactLabel": "Email de contacto",
+      "contactPlaceholder": "ej. oficina@suagencia.com",
+      "contactSave": "Guardar email"
     }
   }
 }

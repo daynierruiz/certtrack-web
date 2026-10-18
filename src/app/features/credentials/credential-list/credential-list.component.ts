@@ -260,6 +260,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
     .status-EXPIRED { background: #eeeeee; color: #616161; }
     .status-PENDING_REVIEW { background: #e3f2fd; color: #1565c0; }
     .status-SUPERSEDED { background: #f5f5f5; color: #9e9e9e; }
+    .status-REJECTED { background: #fce4ec; color: #ad1457; }
     .emp-badge {
       display: inline-block; margin-left: 8px; padding: 1px 8px;
       border-radius: 10px; font-size: 11px; font-weight: 600;
@@ -482,6 +483,7 @@ export class CredentialListComponent implements OnInit {
       case 'EXPIRED': return 'cancel';
       case 'PENDING_REVIEW': return 'hourglass_top';
       case 'SUPERSEDED': return 'history';
+      case 'REJECTED': return 'block';
       default: return 'info';
     }
   }

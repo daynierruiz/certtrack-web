@@ -1,11 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -13,20 +19,20 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ApplicantService } from '../../../core/services/applicant.service';
-import {
-  ApplicantResponse,
-  LANGUAGE_OPTIONS,
-  LanguageCode
-} from '../../../core/models/applicant.model';
+import { AuthService } from '../../../core/services/auth.service';
+import { PositionService } from '../../../core/services/position.service';
+import { PositionResponse } from '../../../core/models/position.model';
+import { ApplicantResponse } from '../../../core/models/applicant.model';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component';
 
 @Component({
   selector: 'app-applicant-list',
   standalone: true,
   imports: [
-    CommonModule, RouterModule,
+    CommonModule, FormsModule, RouterModule,
     MatTableModule, MatButtonModule, MatIconModule, MatChipsModule,
-    MatCardModule, MatProgressSpinnerModule, MatDialogModule,
+    MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule,
+    MatMenuModule, MatDividerModule, MatProgressSpinnerModule, MatDialogModule,
     MatSnackBarModule, MatTooltipModule,
     TranslocoModule
   ],
@@ -35,6 +41,41 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
       <h1>{{ 'applicant.list.title' | transloco }}</h1>
       <p class="subtitle">{{ 'applicant.list.subtitle' | transloco }}</p>
     </div>
+
+    <mat-card class="filters-bar">
+      <div class="filters-top">
+        <mat-form-field appearance="outline" class="filter-search" subscriptSizing="dynamic">
+          <mat-label>{{ 'applicant.list.searchLabel' | transloco }}</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput [(ngModel)]="search" (ngModelChange)="applyFilters()"
+                 [placeholder]="'applicant.list.searchPlaceholder' | transloco">
+          @if (search) {
+            <button matSuffix mat-icon-button (click)="search=''; applyFilters()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-status" subscriptSizing="dynamic">
+          <mat-label>{{ 'common.status' | transloco }}</mat-label>
+          <mat-select [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()">
+            <mat-option value="ALL">{{ 'applicant.list.filterAll' | transloco }}</mat-option>
+            <mat-option value="APPLICANT">{{ 'applicant.list.status.APPLICANT' | transloco }}</mat-option>
+            <mat-option value="ONBOARDING">{{ 'applicant.list.status.ONBOARDING' | transloco }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-position" subscriptSizing="dynamic">
+          <mat-label>{{ 'applicant.list.colPosition' | transloco }}</mat-label>
+          <mat-select [(ngModel)]="positionFilter" (ngModelChange)="applyFilters()">
+            <mat-option value="">{{ 'applicant.list.filterAllPositions' | transloco }}</mat-option>
+            @for (pos of positions; track pos.publicId) {
+              <mat-option [value]="pos.publicId">{{ pos.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-card>
 
     @if (loading) {
       <div class="loading-center">
@@ -50,16 +91,34 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
           </div>
         </mat-card-content>
       </mat-card>
+    } @else if (filtered.length === 0) {
+      <mat-card class="empty-card">
+        <mat-card-content>
+          <div class="empty-state">
+            <mat-icon>filter_alt_off</mat-icon>
+            <h3>{{ 'applicant.list.noMatches' | transloco }}</h3>
+          </div>
+        </mat-card-content>
+      </mat-card>
     } @else if (isMobile) {
       <!-- Mobile: stacked cards -->
       <div class="card-list">
-        @for (row of applicants; track row.publicId) {
+        @for (row of filtered; track row.publicId) {
           <div class="entity-card">
             <div class="entity-card-top">
               <a class="name-link" [routerLink]="['/employees', row.publicId]">
                 <strong>{{ row.lastName }}, {{ row.firstName }}</strong>
               </a>
-              <span class="status-chip" [class]="'status-' + row.status.toLowerCase()">{{ statusLabel(row.status) }}</span>
+              <div class="top-right">
+                <span class="status-chip" [class]="'status-' + row.status.toLowerCase()">{{ statusLabel(row.status) }}</span>
+                <button mat-icon-button [matMenuTriggerFor]="rowMenu"
+                        [matTooltip]="'common.actions' | transloco">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #rowMenu="matMenu">
+                  <ng-container *ngTemplateOutlet="menuItems; context: { row: row }"></ng-container>
+                </mat-menu>
+              </div>
             </div>
             @if (row.email) {
               <div class="entity-card-line"><mat-icon>email</mat-icon> {{ row.email }}</div>
@@ -68,36 +127,14 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
             @if (row.schoolName) {
               <div class="entity-card-line"><mat-icon>school</mat-icon> {{ row.schoolName }}</div>
             }
-            @if (row.languages.length || row.languageOther) {
-              <mat-chip-set class="entity-card-langs">
-                @for (lang of row.languages; track lang) {
-                  <mat-chip>{{ 'spokenLanguages.' + lang | transloco }}</mat-chip>
-                }
-                @if (row.languageOther) { <mat-chip>{{ row.languageOther }}</mat-chip> }
-              </mat-chip-set>
-            }
             <div class="entity-card-line"><mat-icon>event</mat-icon> {{ 'applicant.list.applied' | transloco }}: {{ row.applicationDate | date:'mediumDate' }}</div>
-            <div class="card-cta">
-              @if (row.status === 'APPLICANT') {
-                <button mat-stroked-button color="primary" (click)="onApprove(row)">
-                  <mat-icon>check_circle</mat-icon> {{ 'applicant.list.approveBtn' | transloco }}
-                </button>
-                <button mat-stroked-button color="warn" (click)="onReject(row)">
-                  <mat-icon>cancel</mat-icon> {{ 'applicant.list.rejectBtn' | transloco }}
-                </button>
-              } @else if (row.status === 'ONBOARDING') {
-                <button mat-raised-button color="primary" (click)="onActivate(row)">
-                  <mat-icon>verified_user</mat-icon> {{ 'applicant.list.hireBtn' | transloco }}
-                </button>
-              }
-            </div>
           </div>
         }
       </div>
     } @else {
       <mat-card>
         <div class="table-scroll">
-        <table mat-table [dataSource]="applicants" class="full-width">
+        <table mat-table [dataSource]="filtered" class="full-width">
 
           <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>{{ 'common.name' | transloco }}</th>
@@ -154,26 +191,14 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
 
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | transloco }}</th>
-            <td mat-cell *matCellDef="let row">
-              @if (row.status === 'APPLICANT') {
-                <button mat-icon-button color="primary"
-                        [matTooltip]="'applicant.list.approveBtn' | transloco"
-                        (click)="onApprove(row)">
-                  <mat-icon>check_circle</mat-icon>
-                </button>
-                <button mat-icon-button color="warn"
-                        [matTooltip]="'applicant.list.rejectBtn' | transloco"
-                        (click)="onReject(row)">
-                  <mat-icon>cancel</mat-icon>
-                </button>
-              } @else if (row.status === 'ONBOARDING') {
-                <button mat-raised-button color="primary"
-                        class="hire-btn"
-                        (click)="onActivate(row)">
-                  <mat-icon>verified_user</mat-icon>
-                  {{ 'applicant.list.hireBtn' | transloco }}
-                </button>
-              }
+            <td mat-cell *matCellDef="let row" class="actions-cell">
+              <button mat-icon-button [matMenuTriggerFor]="rowMenu"
+                      [matTooltip]="'common.actions' | transloco">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #rowMenu="matMenu">
+                <ng-container *ngTemplateOutlet="menuItems; context: { row: row }"></ng-container>
+              </mat-menu>
             </td>
           </ng-container>
 
@@ -183,78 +208,59 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
         </div>
       </mat-card>
     }
+
+    <!-- Shared action menu (desktop + mobile), context-aware by status -->
+    <ng-template #menuItems let-row="row">
+      <a mat-menu-item [routerLink]="['/employees', row.publicId]">
+        <mat-icon>visibility</mat-icon> {{ 'applicant.list.viewProfile' | transloco }}
+      </a>
+      @if (row.status === 'APPLICANT') {
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="onApprove(row)">
+          <mat-icon color="primary">check_circle</mat-icon> {{ 'applicant.list.approveBtn' | transloco }}
+        </button>
+        <button mat-menu-item (click)="onReject(row)">
+          <mat-icon color="warn">cancel</mat-icon> {{ 'applicant.list.rejectBtn' | transloco }}
+        </button>
+      } @else if (row.status === 'ONBOARDING') {
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="onActivate(row)">
+          <mat-icon color="primary">verified_user</mat-icon> {{ 'applicant.list.hireBtn' | transloco }}
+        </button>
+        <button mat-menu-item (click)="onResend(row)">
+          <mat-icon>forward_to_inbox</mat-icon> {{ 'applicant.list.resendBtn' | transloco }}
+        </button>
+        <button mat-menu-item (click)="onReject(row)">
+          <mat-icon color="warn">cancel</mat-icon> {{ 'applicant.list.removeBtn' | transloco }}
+        </button>
+      }
+    </ng-template>
   `,
   styles: [`
-    .page-header {
-      margin-bottom: 24px;
-    }
-    .page-header h1 {
-      margin: 0;
-      font-size: 24px;
-      color: #1a237e;
-    }
-    .subtitle {
-      color: #666;
-      margin: 4px 0 0;
-    }
+    .page-header { margin-bottom: 16px; }
+    .page-header h1 { margin: 0; font-size: 24px; color: #1a237e; }
+    .subtitle { color: #666; margin: 4px 0 0; }
+    .filters-bar { margin-bottom: 16px; padding: 12px 16px; }
+    .filters-top { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .filter-search { flex: 1 1 260px; min-width: 200px; }
+    .filter-status { flex: 0 1 180px; min-width: 140px; }
+    .filter-position { flex: 0 1 240px; min-width: 180px; }
     .full-width { width: 100%; }
     .table-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .loading-center {
-      display: flex;
-      justify-content: center;
-      padding: 48px 0;
-    }
-    .empty-state {
-      text-align: center;
-      padding: 48px 24px;
-      color: #999;
-    }
-    .empty-state mat-icon {
-      font-size: 64px;
-      width: 64px;
-      height: 64px;
-    }
-    .empty-state h3 {
-      color: #666;
-    }
-    .applicant-name {
-      font-weight: 500;
-    }
-    .applicant-email {
-      font-size: 12px;
-      color: #666;
-    }
+    .loading-center { display: flex; justify-content: center; padding: 48px 0; }
+    .empty-state { text-align: center; padding: 48px 24px; color: #999; }
+    .empty-state mat-icon { font-size: 64px; width: 64px; height: 64px; }
+    .empty-state h3 { color: #666; }
+    .applicant-email { font-size: 12px; color: #666; }
+    .actions-cell { white-space: nowrap; text-align: right; }
     .status-chip {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 16px;
-      font-size: 12px;
-      font-weight: 500;
+      display: inline-block; padding: 4px 12px; border-radius: 16px;
+      font-size: 12px; font-weight: 500;
     }
-    .status-applicant {
-      background: #e3f2fd;
-      color: #1565c0;
-    }
-    .status-onboarding {
-      background: #fff3e0;
-      color: #e65100;
-    }
-    .hire-btn {
-      font-size: 12px;
-      line-height: 32px;
-      padding: 0 12px;
-    }
-    .hire-btn mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-      margin-right: 4px;
-    }
+    .status-applicant { background: #e3f2fd; color: #1565c0; }
+    .status-onboarding { background: #fff3e0; color: #e65100; }
     @media (max-width: 768px) {
-      .mat-column-phone,
-      .mat-column-date,
-      .mat-column-languages,
-      .mat-column-school {
+      .mat-column-phone, .mat-column-date, .mat-column-languages, .mat-column-school {
         display: none;
       }
     }
@@ -267,6 +273,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
     .entity-card-top {
       display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;
     }
+    .top-right { display: flex; align-items: center; gap: 4px; }
     .name-link { cursor: pointer; color: #1565c0; text-decoration: none; }
     .name-link:hover { text-decoration: underline; }
     .entity-card-top .name-link { font-size: 15px; }
@@ -274,16 +281,20 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
       display: flex; align-items: center; gap: 6px; font-size: 13px; color: #555; margin-top: 2px;
     }
     .entity-card-line mat-icon { font-size: 15px; width: 15px; height: 15px; color: #999; }
-    .entity-card-langs { margin-top: 8px; }
-    .card-cta { display: flex; gap: 8px; margin-top: 12px; }
-    .card-cta button { flex: 1; }
   `]
 })
 export class ApplicantListComponent implements OnInit {
   applicants: ApplicantResponse[] = [];
+  filtered: ApplicantResponse[] = [];
+  positions: PositionResponse[] = [];
   loading = true;
   isMobile = false;
   displayedColumns = ['name', 'position', 'languages', 'school', 'phone', 'date', 'status', 'actions'];
+
+  // Filters
+  search = '';
+  statusFilter: 'ALL' | 'APPLICANT' | 'ONBOARDING' = 'ALL';
+  positionFilter = '';
 
   private readonly statusMap: Record<string, string> = {
     APPLICANT: 'applicant.list.status.APPLICANT',
@@ -292,9 +303,6 @@ export class ApplicantListComponent implements OnInit {
     REJECTED: 'applicant.list.status.REJECTED'
   };
 
-  // Language display labels are translated in the template via the
-  // 'spokenLanguages.<CODE>' Transloco key.
-
   statusLabel(status: string): string {
     const key = this.statusMap[status];
     return key ? this.transloco.translate(key) : status;
@@ -302,6 +310,8 @@ export class ApplicantListComponent implements OnInit {
 
   constructor(
     private applicantService: ApplicantService,
+    private positionService: PositionService,
+    private authService: AuthService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private breakpointObserver: BreakpointObserver,
@@ -314,6 +324,15 @@ export class ApplicantListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadApplicants();
+    this.loadPositions();
+  }
+
+  private loadPositions(): void {
+    const agencyId = this.authService.agencyPublicId();
+    this.positionService.getAll(agencyId, 0, 200).subscribe({
+      next: page => { this.positions = page.content; },
+      error: () => { this.positions = []; }
+    });
   }
 
   loadApplicants(): void {
@@ -321,11 +340,32 @@ export class ApplicantListComponent implements OnInit {
     this.applicantService.listApplicants().subscribe({
       next: (data) => {
         this.applicants = data;
+        this.applyFilters();
         this.loading = false;
       },
       error: () => {
         this.loading = false;
       }
+    });
+  }
+
+  applyFilters(): void {
+    const q = this.search.trim().toLowerCase();
+    this.filtered = this.applicants.filter(a => {
+      if (this.statusFilter !== 'ALL' && a.status !== this.statusFilter) {
+        return false;
+      }
+      if (this.positionFilter && a.positionPublicId !== this.positionFilter) {
+        return false;
+      }
+      if (q) {
+        const hay = [a.firstName, a.lastName, a.email, a.schoolName, a.positionName]
+          .filter(Boolean).join(' ').toLowerCase();
+        if (!hay.includes(q)) {
+          return false;
+        }
+      }
+      return true;
     });
   }
 
@@ -352,6 +392,7 @@ export class ApplicantListComponent implements OnInit {
           const idx = this.applicants.findIndex(a => a.publicId === applicant.publicId);
           if (idx >= 0) this.applicants[idx] = updated;
           this.applicants = [...this.applicants];
+          this.applyFilters();
           this.snackBar.open(
             this.transloco.translate('applicant.list.approvedSnack', {
               firstName: applicant.firstName,
@@ -387,6 +428,7 @@ export class ApplicantListComponent implements OnInit {
       this.applicantService.reject(applicant.publicId).subscribe({
         next: () => {
           this.applicants = this.applicants.filter(a => a.publicId !== applicant.publicId);
+          this.applyFilters();
           this.snackBar.open(this.transloco.translate('applicant.list.rejectedSnack'), 'OK', { duration: 3000 });
         },
         error: (err) => {
@@ -417,6 +459,7 @@ export class ApplicantListComponent implements OnInit {
       this.applicantService.activate(applicant.publicId).subscribe({
         next: () => {
           this.applicants = this.applicants.filter(a => a.publicId !== applicant.publicId);
+          this.applyFilters();
           this.snackBar.open(
             this.transloco.translate('applicant.list.hiredSnack', {
               firstName: applicant.firstName,
@@ -429,6 +472,19 @@ export class ApplicantListComponent implements OnInit {
           this.snackBar.open(err.error?.message || this.transloco.translate('applicant.list.hireError'), 'OK', { duration: 5000 });
         }
       });
+    });
+  }
+
+  onResend(applicant: ApplicantResponse): void {
+    this.applicantService.resendSetup(applicant.publicId).subscribe({
+      next: () => {
+        this.snackBar.open(
+          this.transloco.translate('applicant.list.resendSnack', { email: applicant.email }),
+          'OK', { duration: 4000 });
+      },
+      error: (err) => {
+        this.snackBar.open(err.error?.message || this.transloco.translate('applicant.list.resendError'), 'OK', { duration: 5000 });
+      }
     });
   }
 }

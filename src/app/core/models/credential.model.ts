@@ -1,4 +1,4 @@
-export type CredentialStatus = 'VALID' | 'EXPIRING_SOON' | 'CRITICAL' | 'EXPIRED' | 'PENDING_REVIEW' | 'SUPERSEDED';
+export type CredentialStatus = 'VALID' | 'EXPIRING_SOON' | 'CRITICAL' | 'EXPIRED' | 'PENDING_REVIEW' | 'SUPERSEDED' | 'REJECTED';
 
 export type CredentialCategory =
   | 'IDENTITY'

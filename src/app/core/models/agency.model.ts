@@ -5,6 +5,7 @@ export interface AgencyResponse {
   timezone: string;
   country: string;
   state: string;
+  contactEmail: string | null;
   briefingEnabled: boolean;
   briefingLanguage: 'en' | 'es';
   createdAt: string;
@@ -14,6 +15,11 @@ export interface AgencyResponse {
 export interface AgencyBriefingSettingsRequest {
   enabled: boolean;
   language: 'en' | 'es';
+}
+
+export interface AgencyContactSettingsRequest {
+  /** Blank clears the agency's Reply-To; emails then fall back to the platform address. */
+  contactEmail: string | null;
 }
 
 export interface AgentBriefingResponse {

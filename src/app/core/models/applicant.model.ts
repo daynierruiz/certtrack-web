@@ -12,6 +12,9 @@ export const LANGUAGE_OPTIONS: { value: LanguageCode; label: string }[] = [
 
 export interface ApplicantRegisterRequest {
   agencySlug?: string;
+  /** Opaque 96-bit apply-link key from /apply/:key. Required in production
+   *  (the slug fallback is rejected server-side), so always send it when present. */
+  applyLinkKey?: string;
   firstName: string;
   lastName: string;
   email: string;

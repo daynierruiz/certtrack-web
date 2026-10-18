@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, share, EMPTY, finalize } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthResponse, LoginRequest, MeResponse, RefreshRequest } from '../models/auth.model';
+import { AuthResponse, InvitationTokenResponse, LoginRequest, MeResponse, RefreshRequest, RegisterRequest } from '../models/auth.model';
 
 const ACCESS_TOKEN_KEY = 'ct_access_token';
 const REFRESH_TOKEN_KEY = 'ct_refresh_token';
@@ -12,6 +12,7 @@ const USER_KEY = 'ct_user';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly apiUrl = `${environment.apiUrl}/auth`;
+  private readonly accountUrl = `${environment.apiUrl}/account`;
 
   private currentUser = signal<MeResponse | null>(this.loadUser());
   private refreshInFlight$: Observable<AuthResponse> | null = null;
@@ -32,10 +33,16 @@ export class AuthService {
     );
   }
 
-  register(request: any): Observable<AuthResponse> {
+  register(request: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, request).pipe(
       tap(res => this.storeTokens(res))
     );
+  }
+
+  /** Public lookup used by the register page to resolve an invitation token. */
+  validateInvitationToken(token: string): Observable<InvitationTokenResponse> {
+    return this.http.get<InvitationTokenResponse>(
+      `${environment.apiUrl}/invitations/by-token`, { params: { token } });
   }
 
   refreshToken(): Observable<AuthResponse> {
@@ -68,7 +75,34 @@ export class AuthService {
     );
   }
 
+  /** Update the logged-in user's own profile (name + email); refreshes the session user. */
+  updateProfile(fullName: string, email: string): Observable<MeResponse> {
+    return this.http.put<MeResponse>(`${this.accountUrl}/profile`, { fullName, email }).pipe(
+      tap(user => {
+        this.currentUser.set(user);
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+      })
+    );
+  }
+
+  /** Change the logged-in user's own password (current → new). */
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.accountUrl}/change-password`, { currentPassword, newPassword });
+  }
+
+  /** Stores the tokens of a session obtained outside this service (e.g. applicant setup-password). */
+  acceptSession(res: AuthResponse): void {
+    this.storeTokens(res);
+  }
+
   logout(): void {
+    // Best-effort server-side revocation of the refresh token — fire and
+    // forget: local cleanup must happen regardless of the outcome.
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (refreshToken) {
+      this.http.post<void>(`${this.apiUrl}/logout`, { refreshToken })
+        .subscribe({ error: () => { /* ignore */ } });
+    }
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

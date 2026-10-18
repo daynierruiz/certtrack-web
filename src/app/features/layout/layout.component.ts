@@ -12,6 +12,7 @@ import { TranslocoModule } from '@jsverse/transloco';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { LanguageService } from '../../core/services/language.service';
+import { CoraChatComponent } from '../cora/cora-chat.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -21,7 +22,7 @@ import { environment } from '../../../environments/environment';
     CommonModule, RouterModule, RouterOutlet,
     MatSidenavModule, MatToolbarModule, MatListModule,
     MatIconModule, MatButtonModule, MatMenuModule,
-    TranslocoModule
+    TranslocoModule, CoraChatComponent
   ],
   template: `
     <mat-sidenav-container class="app-container">
@@ -74,10 +75,20 @@ import { environment } from '../../../environments/environment';
                 <span class="nav-badge accent">{{ badgeApplicants }}</span>
               }
             </a>
+            <a mat-list-item routerLink="/map" routerLinkActive="active-link"
+               (click)="isMobile && sidenav.close()">
+              <mat-icon matListItemIcon>map</mat-icon>
+              <span matListItemTitle>{{ 'nav.map' | transloco }}</span>
+            </a>
             <a mat-list-item routerLink="/contract-templates" routerLinkActive="active-link"
                (click)="isMobile && sidenav.close()">
               <mat-icon matListItemIcon>description</mat-icon>
               <span matListItemTitle>{{ 'nav.contractTemplates' | transloco }}</span>
+            </a>
+            <a mat-list-item routerLink="/reports" routerLinkActive="active-link"
+               (click)="isMobile && sidenav.close()">
+              <mat-icon matListItemIcon>fact_check</mat-icon>
+              <span matListItemTitle>{{ 'nav.reports' | transloco }}</span>
             </a>
             @if (agentEnabled) {
               <a mat-list-item routerLink="/settings/agent" routerLinkActive="active-link"
@@ -130,6 +141,10 @@ import { environment } from '../../../environments/environment';
               <div class="user-role">{{ 'roles.' + (authService.user()?.role || '') | transloco }}</div>
             </div>
             <mat-divider></mat-divider>
+            <a mat-menu-item routerLink="/account">
+              <mat-icon>manage_accounts</mat-icon>
+              <span>{{ 'nav.myAccount' | transloco }}</span>
+            </a>
             <button mat-menu-item (click)="logout()">
               <mat-icon>logout</mat-icon>
               <span>{{ 'nav.signOut' | transloco }}</span>
@@ -140,6 +155,10 @@ import { environment } from '../../../environments/environment';
         <main class="main-content">
           <router-outlet></router-outlet>
         </main>
+
+        @if (coraEnabled && authService.isAdmin()) {
+          <app-cora-chat></app-cora-chat>
+        }
       </mat-sidenav-content>
     </mat-sidenav-container>
   `,
@@ -238,6 +257,7 @@ export class LayoutComponent {
   badgePendingReview = 0;
   badgeApplicants = 0;
   readonly agentEnabled = environment.agentEnabled;
+  readonly coraEnabled = environment.coraEnabled;
 
   constructor(
     public authService: AuthService,

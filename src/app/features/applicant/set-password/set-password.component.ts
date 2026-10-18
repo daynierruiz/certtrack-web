@@ -244,8 +244,7 @@ export class SetPasswordComponent implements OnInit {
     this.applicantService.setupPassword({ token: this.token, password: this.password }).subscribe({
       next: (authRes) => {
         // Store tokens and redirect to my-profile
-        localStorage.setItem('ct_access_token', authRes.accessToken);
-        localStorage.setItem('ct_refresh_token', authRes.refreshToken);
+        this.authService.acceptSession(authRes);
         this.authService.loadMe().subscribe({
           next: () => {
             this.router.navigate(['/my-profile']);
