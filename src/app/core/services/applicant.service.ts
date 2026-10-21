@@ -52,12 +52,22 @@ export class ApplicantService {
     return this.http.get<ApplicantResponse[]>(this.apiUrl);
   }
 
+  /** Rejected/terminated pre-hire people, so they can be re-hired (F-5). */
+  listRejected(): Observable<ApplicantResponse[]> {
+    return this.http.get<ApplicantResponse[]>(`${this.apiUrl}/rejected`);
+  }
+
   approve(employeePublicId: string): Observable<ApplicantResponse> {
     return this.http.post<ApplicantResponse>(`${this.apiUrl}/${employeePublicId}/approve`, {});
   }
 
   reject(employeePublicId: string): Observable<void> {
     return this.http.post<void>(`${this.apiUrl}/${employeePublicId}/reject`, {});
+  }
+
+  /** Re-hire a previously TERMINATED person: re-enters ONBOARDING, reactivates login. */
+  rehire(employeePublicId: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${employeePublicId}/rehire`, {});
   }
 
   activate(employeePublicId: string): Observable<ApplicantResponse> {

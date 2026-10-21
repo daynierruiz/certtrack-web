@@ -58,6 +58,13 @@
       },
       "rejectError": "Error al rechazar",
       "rejectedSnack": "Solicitante rechazado/a.",
+      "rehireBtn": "Recontratar",
+      "rehireDialog": {
+        "message": "¿Recontratar a {{firstName}} {{lastName}}? Vuelve a onboarding y se reactiva su acceso.",
+        "title": "Recontratar Solicitante"
+      },
+      "rehiredSnack": "{{firstName}} {{lastName}} volvió a onboarding.",
+      "rehireError": "Error al recontratar",
       "removeBtn": "Quitar",
       "resendBtn": "Reenviar enlace de configuración",
       "resendSnack": "Enlace reenviado a {{email}}",
@@ -72,7 +79,8 @@
         "ACTIVE": "Activo",
         "APPLICANT": "Solicitante",
         "ONBOARDING": "Onboarding",
-        "REJECTED": "Rechazado"
+        "REJECTED": "Rechazado",
+        "TERMINATED": "Rechazado / Terminado"
       },
       "subtitle": "Revise y gestione las solicitudes de empleo",
       "title": "Solicitantes"
@@ -115,6 +123,14 @@
   },
   "auth": {
     "email": "Correo electrónico",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "forgot": {
+      "subtitle": "Restablecer tu contraseña",
+      "instructions": "Ingresa el correo de tu cuenta y te enviaremos un enlace para restablecer tu contraseña.",
+      "submit": "Enviar enlace",
+      "sentMessage": "Si existe una cuenta con ese correo, te enviamos un enlace para restablecer la contraseña. Revisa tu bandeja de entrada.",
+      "backToLogin": "Volver a iniciar sesión"
+    },
     "invalidCredentials": "Correo o contraseña inválidos.",
     "password": "Contraseña",
     "sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo.",
@@ -249,6 +265,7 @@
     "currentPassword": "Contraseña actual",
     "email": "Correo",
     "fullName": "Nombre completo",
+    "mustChangePassword": "Un administrador te asignó una contraseña temporal. Establece una nueva contraseña para continuar.",
     "newPassword": "Nueva contraseña",
     "passwordChanged": "Contraseña cambiada.",
     "passwordsNoMatch": "Las nuevas contraseñas no coinciden.",
@@ -383,6 +400,8 @@
       "openInNewTab": "Abrir en nueva pestaña",
       "reject": "Rechazar",
       "rejectedOk": "Credencial rechazada",
+      "rotate": "Rotar 90°",
+      "rotateError": "No se pudo rotar la imagen",
       "reviewError": "Error al revisar la credencial",
       "reviewNotesLabel": "Notas de revisión (opcional)",
       "reviewNotesPlaceholder": "Agregue notas sobre su decisión...",
@@ -494,7 +513,16 @@
       "resetPasswordError": "Error al restablecer la contraseña",
       "resetPasswordMessage": "¿Está seguro de que desea restablecer la contraseña de {{firstName}} {{lastName}}?\n\nLa contraseña actual dejará de funcionar y se enviará un correo de restablecimiento al empleado.",
       "resetPasswordOk": "Correo de restablecimiento de contraseña enviado al empleado",
-      "resetPasswordTitle": "Restablecer Contraseña"
+      "resetPasswordTitle": "Restablecer Contraseña",
+      "setPasswordConfirm": "Confirmar contraseña temporal",
+      "setPasswordError": "No se pudo establecer la contraseña",
+      "setPasswordMessage": "Asigna una contraseña temporal para {{firstName}} {{lastName}}. Deberá cambiarla en el próximo inicio de sesión. Úsalo para empleados sin correo electrónico.",
+      "setPasswordNew": "Contraseña temporal",
+      "setPasswordNoMatch": "Las contraseñas no coinciden.",
+      "setPasswordOk": "Contraseña temporal establecida. Compártela con el empleado; la cambiará en su próximo inicio de sesión.",
+      "setPasswordSubmit": "Establecer contraseña",
+      "setPasswordTitle": "Establecer Contraseña Temporal",
+      "setPasswordTooShort": "La contraseña debe tener al menos 8 caracteres."
     },
     "accountDeactivated": "Cuenta desactivada",
     "accountLocked": "Cuenta bloqueada",
@@ -543,6 +571,11 @@
     "credentials": {
       "addCredential": "Agregar Credencial",
       "credentialNumber": "Credencial #",
+      "deleteCredential": "Eliminar credencial",
+      "deleteTitle": "Eliminar credencial",
+      "deleteMessage": "¿Eliminar la credencial {{type}} y todos sus documentos? Esta acción no se puede deshacer.",
+      "deleteOk": "Credencial eliminada",
+      "deleteError": "Error al eliminar la credencial",
       "empty": "No hay credenciales registradas.",
       "expiration": "Vencimiento",
       "expired": "Venció",
@@ -590,7 +623,8 @@
       "activateAccount": "Activar cuenta",
       "deactivateAccount": "Desactivar cuenta",
       "noAccountLinked": "Sin cuenta de usuario vinculada",
-      "resetPassword": "Restablecer contraseña (reenviar enlace de configuración)"
+      "resetPassword": "Restablecer contraseña (reenviar enlace de configuración)",
+      "setPassword": "Establecer contraseña temporal"
     },
     "moreActions": "Más acciones",
     "na": "N/D",
@@ -792,6 +826,12 @@
       "reasonMissing": "{{count}} faltante(s)",
       "reasonNeedsRenewal": "{{count}} necesita(n) renovación",
       "reasonPendingReview": "{{count}} en revisión pendiente",
+      "reasonRejected": "{{count}} rechazada(s)",
+      "rejectedTitle": "Rechazada — Acción requerida",
+      "rejectedSub": "Un administrador no pudo aceptar estos documentos. Por favor sube una copia más clara.",
+      "rejectionReason": "Motivo",
+      "reupload": "Volver a subir",
+      "reuploadUnavailable": "Este tipo de credencial ya no es requerido para tus posiciones. Contacta a tu administrador.",
       "renew": "Renovar",
       "renewCredential": "Renovar credencial",
       "renewalSubmitted": "Renovación enviada para revisión",
@@ -838,10 +878,12 @@
       "aiUnavailable": "Análisis de IA no disponible. Por favor, completa los campos manualmente.",
       "analyzingAi": "Analizando documento con IA...",
       "back": "Dorso",
+      "blurryWarning": "Esa foto se ve borrosa. Para mejor resultado, mantén el pulso firme y vuelve a tomarla con buena luz para que el texto salga nítido.",
       "clickOrDrag": "Haz clic o arrastra para subir",
       "credentialNumber": "Número de credencial",
       "credentialSubmitted": "Credencial enviada para revisión",
       "documentImages": "Imágenes del documento (frente y dorso si aplica)",
+      "documentRequired": "Esta credencial requiere al menos una imagen del documento antes de poder enviarla.",
       "expirationDate": "Fecha de vencimiento",
       "failedToSubmit": "Error al enviar la credencial",
       "front": "Frente",
@@ -849,10 +891,12 @@
       "issueDate": "Fecha de emisión",
       "issuer": "Emisor",
       "partialUploadError": "Credencial creada, pero algunos documentos no se pudieron subir",
+      "partialUploadRetry": "{{count}} documento(s) no se pudieron subir — siguen seleccionados, toca enviar para reintentar.",
       "previewAlt": "Vista previa {{n}}",
       "submitForReview": "Enviar para revisión",
       "submitRenewal": "Enviar renovación",
       "submitting": "Enviando...",
+      "takePhoto": "Tomar foto",
       "titleRenew": "Renovar",
       "titleSubmit": "Enviar"
     }
@@ -871,6 +915,11 @@
     "positions": "Puestos",
     "reports": "Reportes",
     "signOut": "Cerrar sesión"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Estás al día.",
+    "untitled": "Notificación"
   },
   "map": {
     "title": "Mapa de cuidadores",

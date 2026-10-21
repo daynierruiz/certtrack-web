@@ -49,7 +49,8 @@ function makeMe(role: string): MeResponse {
     employeePublicId: role === 'EMPLOYEE' ? 'emp-1' : null,
     email: 'user@test.com',
     fullName: 'User Test',
-    role
+    role,
+    mustChangePassword: false
   };
 }
 

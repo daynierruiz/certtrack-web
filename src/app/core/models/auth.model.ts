@@ -28,6 +28,7 @@ export interface MeResponse {
   email: string;
   fullName: string;
   role: string;
+  mustChangePassword: boolean;
 }
 
 export interface RefreshRequest {

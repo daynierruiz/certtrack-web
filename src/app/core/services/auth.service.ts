@@ -16,6 +16,8 @@ export class AuthService {
 
   private currentUser = signal<MeResponse | null>(this.loadUser());
   private refreshInFlight$: Observable<AuthResponse> | null = null;
+  private lastRoleSyncAt = 0;
+  private static readonly ROLE_SYNC_INTERVAL_MS = 60_000;
 
   readonly user = this.currentUser.asReadonly();
   readonly isLoggedIn = computed(() => !!this.currentUser());
@@ -24,6 +26,8 @@ export class AuthService {
   readonly employeePublicId = computed(() => this.currentUser()?.employeePublicId ?? null);
   readonly isEmployee = computed(() => this.currentUser()?.role === 'EMPLOYEE');
   readonly isAdmin = computed(() => ['OWNER', 'ADMIN'].includes(this.currentUser()?.role ?? ''));
+  /** True when an admin assigned a temporary password and the user must set a new one. */
+  readonly mustChangePassword = computed(() => this.currentUser()?.mustChangePassword === true);
 
   constructor(private http: HttpClient, private router: Router) {}
 
@@ -75,6 +79,35 @@ export class AuthService {
     );
   }
 
+  /**
+   * F-11: fire-and-forget reconcile of the cached user with the backend so a
+   * server-side role change doesn't leave the UI on a stale (e.g. admin) role
+   * until the next login. Throttled so it doesn't issue a /me on every
+   * navigation. When the role actually changed, the cache (and all role signals)
+   * updates and the user is routed to the home matching their new role.
+   */
+  syncUserFromServer(force = false): void {
+    if (!this.hasValidAccessToken()) {
+      return;
+    }
+    const now = Date.now();
+    if (!force && now - this.lastRoleSyncAt < AuthService.ROLE_SYNC_INTERVAL_MS) {
+      return;
+    }
+    this.lastRoleSyncAt = now;
+    const previousRole = this.currentUser()?.role ?? '';
+    this.loadMe().subscribe({
+      next: user => {
+        if (user.role !== previousRole) {
+          const target = user.role === 'EMPLOYEE' ? '/my-profile' : '/dashboard';
+          this.router.navigate([target]);
+        }
+      },
+      // Leave the cache untouched on error; the HTTP interceptor handles 401/expiry.
+      error: () => { /* ignore */ }
+    });
+  }
+
   /** Update the logged-in user's own profile (name + email); refreshes the session user. */
   updateProfile(fullName: string, email: string): Observable<MeResponse> {
     return this.http.put<MeResponse>(`${this.accountUrl}/profile`, { fullName, email }).pipe(
@@ -88,6 +121,11 @@ export class AuthService {
   /** Change the logged-in user's own password (current → new). */
   changePassword(currentPassword: string, newPassword: string): Observable<void> {
     return this.http.post<void>(`${this.accountUrl}/change-password`, { currentPassword, newPassword });
+  }
+
+  /** Self-service password reset request. Backend always returns 204 (anti-enumeration). */
+  forgotPassword(email: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/forgot-password`, { email });
   }
 
   /** Stores the tokens of a session obtained outside this service (e.g. applicant setup-password). */

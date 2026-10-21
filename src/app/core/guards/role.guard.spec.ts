@@ -17,7 +17,8 @@ function seedUser(role: string): void {
     employeePublicId: role === 'EMPLOYEE' ? 'emp-1' : null,
     email: 'user@acme.com',
     fullName: 'User One',
-    role
+    role,
+    mustChangePassword: false
   };
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }

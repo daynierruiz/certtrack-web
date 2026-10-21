@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -24,6 +25,13 @@ import { AuthService } from '../../core/services/auth.service';
   template: `
     <div class="account-page">
       <h1>{{ 'account.title' | transloco }}</h1>
+
+      @if (authService.mustChangePassword()) {
+        <div class="account-mustchange" role="alert">
+          <mat-icon>info</mat-icon>
+          <span>{{ 'account.mustChangePassword' | transloco }}</span>
+        </div>
+      }
 
       <mat-card class="account-card">
         <h2>{{ 'account.profile' | transloco }}</h2>
@@ -85,12 +93,19 @@ import { AuthService } from '../../core/services/auth.service';
     .account-meta { display: flex; flex-wrap: wrap; gap: 16px; color: #555; font-size: 13px; margin: 4px 0 16px; }
     .account-actions { display: flex; justify-content: flex-end; }
     .account-error { color: #c62828; font-size: 13px; margin-bottom: 12px; }
+    .account-mustchange {
+      display: flex; align-items: center; gap: 10px;
+      background: #fff8e1; border: 1px solid #ffe082; color: #8a6d00;
+      border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px;
+    }
+    .account-mustchange mat-icon { color: #f9a825; }
   `]
 })
 export class AccountComponent {
   readonly authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
   private transloco = inject(TranslocoService);
+  private router = inject(Router);
 
   fullName = this.authService.user()?.fullName ?? '';
   email = this.authService.user()?.email ?? '';
@@ -145,7 +160,18 @@ export class AccountComponent {
       next: () => {
         this.passwordSaving = false;
         this.currentPassword = this.newPassword = this.confirmPassword = '';
+        const wasForced = this.authService.mustChangePassword();
         this.snackBar.open(this.transloco.translate('account.passwordChanged'), 'OK', { duration: 3000 });
+        // Refresh the session user so the "must change" flag clears; if this was a
+        // forced change, send the user on to their home screen.
+        this.authService.loadMe().subscribe({
+          next: me => {
+            if (wasForced) {
+              this.router.navigate([me.role === 'EMPLOYEE' ? '/my-profile' : '/dashboard']);
+            }
+          },
+          error: () => { /* non-fatal: the password already changed */ }
+        });
       },
       error: err => {
         this.passwordSaving = false;

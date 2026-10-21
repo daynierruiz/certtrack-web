@@ -83,6 +83,12 @@ import { DocumentResponse } from '../../../core/models/document.model';
                 }
                 <div class="doc-actions">
                   <span class="doc-name">{{ doc.originalFilename }}</span>
+                  @if (canRotate(doc)) {
+                    <button mat-icon-button [matTooltip]="'credentials.reviewDialog.rotate' | transloco"
+                            [disabled]="rotatingIndex === i" (click)="rotateDocument(doc, i)">
+                      <mat-icon>rotate_right</mat-icon>
+                    </button>
+                  }
                   <button mat-icon-button [matTooltip]="'common.download' | transloco" (click)="downloadDocument(doc)">
                     <mat-icon>download</mat-icon>
                   </button>
@@ -188,6 +194,7 @@ export class CredentialReviewDialogComponent implements OnInit, OnDestroy {
   reviewNotes = '';
   saving = false;
   blobUrls: (string | null)[] = [];
+  rotatingIndex: number | null = null;
 
   constructor(
     private dialogRef: MatDialogRef<CredentialReviewDialogComponent>,
@@ -228,6 +235,35 @@ export class CredentialReviewDialogComponent implements OnInit, OnDestroy {
         URL.revokeObjectURL(url);
       },
       error: () => this.snackBar.open(this.transloco.translate('credentials.reviewDialog.downloadError'), this.transloco.translate('common.close'), { duration: 3000 })
+    });
+  }
+
+  /** Only raster images we can re-encode server-side (JPEG/PNG) are rotatable. */
+  canRotate(doc: DocumentResponse): boolean {
+    return doc.contentType === 'image/jpeg' || doc.contentType === 'image/png';
+  }
+
+  rotateDocument(doc: DocumentResponse, i: number): void {
+    this.rotatingIndex = i;
+    this.documentService.rotate(doc.publicId, 90).subscribe({
+      next: () => {
+        // Re-fetch the (now-rotated) blob and swap it in, revoking the old URL.
+        this.documentService.downloadAsBlob(doc.publicId).subscribe({
+          next: (url) => {
+            const old = this.blobUrls[i];
+            this.blobUrls[i] = url;
+            if (old) URL.revokeObjectURL(old);
+            this.rotatingIndex = null;
+          },
+          error: () => { this.rotatingIndex = null; }
+        });
+      },
+      error: (err) => {
+        this.rotatingIndex = null;
+        this.snackBar.open(
+          err.error?.message || this.transloco.translate('credentials.reviewDialog.rotateError'),
+          this.transloco.translate('common.close'), { duration: 4000 });
+      }
     });
   }
 

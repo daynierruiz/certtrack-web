@@ -22,6 +22,7 @@ export interface MyProfileResponse {
   };
   credentials: Credential[];
   expiringSoon: Credential[];
+  rejectedCredentials: Credential[];
   missingCredentialTypes: CredentialType[];
   missingOptionalTypes: CredentialType[];
   allCredentialTypes: CredentialType[];

@@ -227,6 +227,39 @@ import { AddressCardComponent } from './address-card.component';
           </mat-card>
         }
 
+        <!-- Rejected: admin rejected the upload — employee must re-submit a clearer copy -->
+        @if (rejectedCredentials.length > 0) {
+          <mat-card class="section-card alert-card" id="rejected-section">
+            <mat-card-header>
+              <mat-icon class="section-icon alert">report_problem</mat-icon>
+              <mat-card-title>{{ 'myProfile.profile.rejectedTitle' | transloco }}</mat-card-title>
+              <mat-card-subtitle>{{ 'myProfile.profile.rejectedSub' | transloco }}</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              @for (cred of rejectedCredentials; track cred.publicId) {
+                <div class="rejected-item">
+                  <div class="rejected-info">
+                    <div class="rejected-head">
+                      <span class="cred-type">{{ getCredentialTypeName(cred.credentialTypePublicId) }}</span>
+                      <mat-chip class="status-chip status-rejected">{{ formatStatus('REJECTED') }}</mat-chip>
+                    </div>
+                    @if (cred.reviewNotes) {
+                      <div class="reject-reason">
+                        <mat-icon class="inline-icon">info</mat-icon>
+                        <span><strong>{{ 'myProfile.profile.rejectionReason' | transloco }}:</strong> {{ cred.reviewNotes }}</span>
+                      </div>
+                    }
+                  </div>
+                  <button mat-raised-button color="primary" class="reupload-btn"
+                          (click)="openReuploadDialog(cred)">
+                    <mat-icon>upload</mat-icon> {{ 'myProfile.profile.reupload' | transloco }}
+                  </button>
+                </div>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+
         <!-- Needs Renewal: EXPIRED + CRITICAL credentials (urgent action) -->
         @if (needsRenewalCredentials.length > 0) {
           <mat-card class="section-card alert-card" id="renewal-section">
@@ -629,7 +662,23 @@ import { AddressCardComponent } from './address-card.component';
     .status-expired { background: #ffebee !important; color: #b71c1c !important; }
     .status-pending_review { background: #e3f2fd !important; color: #1565c0 !important; }
     .status-superseded { background: #f5f5f5 !important; color: #9e9e9e !important; }
+    .status-rejected { background: #ffebee !important; color: #c62828 !important; }
     .status-active { background: #e8f5e9 !important; color: #2e7d32 !important; }
+
+    .rejected-item {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee;
+    }
+    .rejected-item:last-child { border-bottom: none; }
+    .rejected-info { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .rejected-head { display: flex; align-items: center; gap: 10px; }
+    .reject-reason {
+      display: flex; align-items: flex-start; gap: 6px;
+      font-size: 13px; color: #c62828; line-height: 1.35;
+    }
+    .reject-reason .inline-icon { color: #c62828; margin-top: 2px; }
+    .reupload-btn { flex-shrink: 0; }
+    .reupload-btn mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
     .empty-state {
       text-align: center; padding: 32px; color: #999;
@@ -718,6 +767,8 @@ import { AddressCardComponent } from './address-card.component';
       .expiring-actions { align-self: flex-end; }
       .missing-item { flex-direction: column; align-items: flex-start; gap: 8px; }
       .missing-item button { align-self: flex-end; }
+      .rejected-item { flex-direction: column; align-items: stretch; gap: 10px; }
+      .rejected-item .reupload-btn { align-self: flex-end; }
       .contract-item { flex-direction: column; align-items: flex-start; gap: 8px; }
       .pending-banner-item { flex-direction: column; align-items: flex-start; gap: 8px; }
       .pending-banner-item button { align-self: flex-end; }
@@ -790,6 +841,11 @@ export class MyProfileComponent implements OnInit {
     return this.profile.credentials.filter(c => c.status === 'PENDING_REVIEW');
   }
 
+  get rejectedCredentials(): Credential[] {
+    if (!this.profile || !this.profile.rejectedCredentials) return [];
+    return this.profile.rejectedCredentials;
+  }
+
   /** Just EXPIRING_SOON — CRITICAL is shown under "Needs Renewal" instead. */
   get expiringSoonOnlyCredentials(): Credential[] {
     if (!this.profile) return [];
@@ -811,6 +867,8 @@ export class MyProfileComponent implements OnInit {
     if (renewalCount > 0) reasons.push(this.transloco.translate('myProfile.profile.reasonNeedsRenewal', { count: renewalCount }));
     const pendingCount = this.pendingReviewCredentials.length;
     if (pendingCount > 0) reasons.push(this.transloco.translate('myProfile.profile.reasonPendingReview', { count: pendingCount }));
+    const rejectedCount = this.rejectedCredentials.length;
+    if (rejectedCount > 0) reasons.push(this.transloco.translate('myProfile.profile.reasonRejected', { count: rejectedCount }));
     return reasons;
   }
 
@@ -944,6 +1002,20 @@ export class MyProfileComponent implements OnInit {
         this.loadProfile();
       }
     });
+  }
+
+  /**
+   * Re-upload after a rejection. Opens the same upload dialog for the rejected
+   * credential's type; on submit the backend creates a fresh PENDING_REVIEW and
+   * supersedes the rejected record, so it drops out of this section.
+   */
+  openReuploadDialog(credential: Credential): void {
+    const ct = this.credTypeMap.get(credential.credentialTypePublicId);
+    if (!ct) {
+      this.snackBar.open(this.transloco.translate('myProfile.profile.reuploadUnavailable'), 'OK', { duration: 3000 });
+      return;
+    }
+    this.openUploadDialog(ct);
   }
 
   openSignDialog(contract: Contract): void {

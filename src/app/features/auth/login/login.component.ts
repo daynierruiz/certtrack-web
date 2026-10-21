@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -15,7 +15,7 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-login',
   standalone: true,
   imports: [
-    CommonModule, FormsModule,
+    CommonModule, FormsModule, RouterModule,
     MatCardModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatProgressSpinnerModule,
     TranslocoModule
@@ -68,6 +68,10 @@ import { AuthService } from '../../../core/services/auth.service';
                 {{ 'auth.signIn' | transloco }}
               }
             </button>
+
+            <div class="forgot-link">
+              <a routerLink="/forgot-password">{{ 'auth.forgotPassword' | transloco }}</a>
+            </div>
           </form>
         </mat-card-content>
       </mat-card>
@@ -123,6 +127,17 @@ import { AuthService } from '../../../core/services/auth.service';
     mat-card-header {
       margin-bottom: 24px;
     }
+    .forgot-link {
+      text-align: center;
+      margin-top: 16px;
+    }
+    .forgot-link a {
+      color: #1565c0;
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .forgot-link a:hover { text-decoration: underline; }
   `]
 })
 export class LoginComponent implements OnInit {
@@ -154,6 +169,12 @@ export class LoginComponent implements OnInit {
       next: () => {
         this.authService.loadMe().subscribe({
           next: (me) => {
+            // An admin assigned a temporary password: force the change before
+            // anything else by routing to the account page in "must change" mode.
+            if (me.mustChangePassword) {
+              this.router.navigate(['/account'], { queryParams: { mustChange: '1' } });
+              return;
+            }
             const target = me.role === 'EMPLOYEE' ? '/my-profile' : '/dashboard';
             this.router.navigate([target]);
           },

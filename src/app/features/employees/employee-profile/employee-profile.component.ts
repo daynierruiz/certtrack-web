@@ -34,6 +34,7 @@ import { EmployeeEligibilityResponse, RequirementStatusResponse } from '../../..
 import { DocumentResponse } from '../../../core/models/document.model';
 import { EmployeeFormDialogComponent } from '../employee-form-dialog/employee-form-dialog.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog.component';
+import { SetPasswordDialogComponent } from './set-password-dialog.component';
 import { ContractService } from '../../../core/services/contract.service';
 import { Contract } from '../../../core/models/contract.model';
 import { ContractGenerateDialogComponent } from '../../contracts/contract-generate-dialog/contract-generate-dialog.component';
@@ -88,6 +89,10 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
                 <button mat-menu-item (click)="resetEmployeePassword()">
                   <mat-icon>lock_reset</mat-icon>
                   <span>{{ 'employeeProfile.menu.resetPassword' | transloco }}</span>
+                </button>
+                <button mat-menu-item (click)="setEmployeePassword()">
+                  <mat-icon>password</mat-icon>
+                  <span>{{ 'employeeProfile.menu.setPassword' | transloco }}</span>
                 </button>
                 <mat-divider></mat-divider>
               } @else if (accountNotFound) {
@@ -303,6 +308,10 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
                                     <mat-icon>restart_alt</mat-icon> {{ 'employeeProfile.credentials.reopenForReview' | transloco }}
                                   </button>
                                 }
+                                <button mat-stroked-button color="warn"
+                                        (click)="deleteCredential(cred); $event.stopPropagation()">
+                                  <mat-icon>delete</mat-icon> {{ 'employeeProfile.credentials.deleteCredential' | transloco }}
+                                </button>
                               </div>
                               <!-- Documents for this credential -->
                               @if (hasDocuments(cred.publicId)) {
@@ -411,6 +420,10 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
                                   <mat-icon>restart_alt</mat-icon> {{ 'employeeProfile.credentials.reopenForReview' | transloco }}
                                 </button>
                               }
+                              <button mat-stroked-button color="warn"
+                                      (click)="deleteCredential(cred); $event.stopPropagation()">
+                                <mat-icon>delete</mat-icon> {{ 'employeeProfile.credentials.deleteCredential' | transloco }}
+                              </button>
                             </div>
                             @if (hasDocuments(cred.publicId)) {
                               <div class="doc-list">
@@ -1300,6 +1313,31 @@ export class EmployeeProfileComponent implements OnInit {
     });
   }
 
+  deleteCredential(credential: Credential): void {
+    const data: ConfirmDialogData = {
+      title: this.transloco.translate('employeeProfile.credentials.deleteTitle'),
+      message: this.transloco.translate('employeeProfile.credentials.deleteMessage', {
+        type: this.getTypeName(credential.credentialTypePublicId)
+      }),
+      confirmText: this.transloco.translate('common.delete'),
+      color: 'warn',
+      icon: 'delete'
+    };
+    const ref = this.dialog.open(ConfirmDialogComponent, { width: '420px', maxWidth: '95vw', data });
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.credentialService.delete(credential.publicId).subscribe({
+        next: () => {
+          this.snackBar.open(this.transloco.translate('employeeProfile.credentials.deleteOk'), 'OK', { duration: 3000 });
+          if (this.employee) this.loadEmployee(this.employee.publicId);
+        },
+        error: (err) => this.snackBar.open(
+          err.error?.message || this.transloco.translate('employeeProfile.credentials.deleteError'),
+          'OK', { duration: 5000 })
+      });
+    });
+  }
+
   openCredentialReview(credential: Credential): void {
     const docs = this.getDocsForCredential(credential.publicId);
     const dialogRef = this.dialog.open(CredentialReviewDialogComponent, {
@@ -1484,6 +1522,24 @@ export class EmployeeProfileComponent implements OnInit {
           error: () => this.snackBar.open(this.transloco.translate('employeeProfile.account.resetPasswordError'), this.transloco.translate('common.close'), { duration: 3000 })
         });
       });
+  }
+
+  setEmployeePassword(): void {
+    if (!this.employee) return;
+    this.dialog.open(SetPasswordDialogComponent, {
+      width: '420px', maxWidth: '95vw',
+      data: { firstName: this.employee.firstName, lastName: this.employee.lastName }
+    }).afterClosed().subscribe((newPassword: string | undefined) => {
+      if (!newPassword || !this.employee) return;
+      this.employeeService.setPassword(this.employee.publicId, newPassword).subscribe({
+        next: () => this.snackBar.open(
+          this.transloco.translate('employeeProfile.account.setPasswordOk'),
+          this.transloco.translate('common.close'), { duration: 5000 }),
+        error: (err) => this.snackBar.open(
+          err?.error?.message ?? this.transloco.translate('employeeProfile.account.setPasswordError'),
+          this.transloco.translate('common.close'), { duration: 4000 })
+      });
+    });
   }
 
   private loadContracts(employeePublicId: string): void {

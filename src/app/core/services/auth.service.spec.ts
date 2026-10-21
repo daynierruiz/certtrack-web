@@ -25,7 +25,8 @@ const ME: MeResponse = {
   employeePublicId: null,
   email: 'owner@acme.com',
   fullName: 'Owner One',
-  role: 'OWNER'
+  role: 'OWNER',
+  mustChangePassword: false
 };
 
 /** Builds a structurally valid (unsigned) JWT whose exp claim is controllable. */

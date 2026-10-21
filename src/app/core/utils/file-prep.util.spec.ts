@@ -1,4 +1,4 @@
-import { prepareFileForUpload, UnsupportedFileError, UPLOAD_ACCEPT } from './file-prep.util';
+import { prepareFileForUpload, UnsupportedFileError, UPLOAD_ACCEPT, estimateSharpness, BLUR_VARIANCE_THRESHOLD } from './file-prep.util';
 
 /** 1x1 transparent PNG (valid, decodable by the browser). */
 const PNG_1X1_BASE64 =
@@ -65,12 +65,16 @@ describe('file-prep.util', () => {
       }
     });
 
-    it('does not recompress a small, low-resolution accepted image (same instance)', async () => {
+    it('re-encodes even a small accepted image to JPEG (bakes EXIF orientation + enhancement)', async () => {
       const png = base64ToFile(PNG_1X1_BASE64, 'tiny.png', 'image/png');
 
       const result = await prepareFileForUpload(png);
 
-      expect(result).toBe(png);
+      // New contract: decodable images always go through the canvas pipeline so
+      // orientation is baked and legibility enhancement is applied.
+      expect(result).not.toBe(png);
+      expect(result.type).toBe('image/jpeg');
+      expect(result.name).toBe('tiny.jpg');
     });
 
     it('returns an undecodable file as-is when its type is backend-accepted', async () => {
@@ -115,13 +119,40 @@ describe('file-prep.util', () => {
       bitmap.close();
     });
 
-    it('keeps an accepted image at or below the dimension cap unscaled', async () => {
-      // Exactly at the cap and small in bytes: no recompression needed.
+    it('re-encodes an at/under-cap image to JPEG without changing its dimensions', async () => {
       const atCap = await makePngFile(50, 50, 'small.png');
 
       const result = await prepareFileForUpload(atCap);
 
-      expect(result).toBe(atCap);
+      expect(result).not.toBe(atCap);
+      expect(result.type).toBe('image/jpeg');
+      expect(result.name).toBe('small.jpg');
+
+      const bitmap = await createImageBitmap(result);
+      expect(bitmap.width).toBe(50);
+      expect(bitmap.height).toBe(50);
+      bitmap.close();
+    });
+  });
+
+  describe('estimateSharpness', () => {
+    it('returns null for a non-image file', async () => {
+      const pdf = new File(['%PDF-1.4'], 'doc.pdf', { type: 'application/pdf' });
+
+      const result = await estimateSharpness(pdf);
+
+      expect(result).toBeNull();
+    });
+
+    it('returns a (near-zero) number for a flat, detail-free image', async () => {
+      const flat = await makePngFile(120, 120, 'flat.png');
+
+      const result = await estimateSharpness(flat);
+
+      expect(result).not.toBeNull();
+      expect(result as number).toBeGreaterThanOrEqual(0);
+      // A solid colour has no edges, so the Laplacian variance is ~0.
+      expect(result as number).toBeLessThan(BLUR_VARIANCE_THRESHOLD);
     });
   });
 });

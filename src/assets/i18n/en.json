@@ -58,6 +58,13 @@
       },
       "rejectError": "Failed to reject",
       "rejectedSnack": "Applicant rejected.",
+      "rehireBtn": "Re-hire",
+      "rehireDialog": {
+        "message": "Re-hire {{firstName}} {{lastName}}? They re-enter onboarding and their login is reactivated.",
+        "title": "Re-hire Applicant"
+      },
+      "rehiredSnack": "{{firstName}} {{lastName}} re-entered onboarding.",
+      "rehireError": "Failed to re-hire",
       "removeBtn": "Remove",
       "resendBtn": "Resend setup link",
       "resendSnack": "Setup link re-sent to {{email}}",
@@ -72,7 +79,8 @@
         "ACTIVE": "Active",
         "APPLICANT": "Applicant",
         "ONBOARDING": "Onboarding",
-        "REJECTED": "Rejected"
+        "REJECTED": "Rejected",
+        "TERMINATED": "Rejected / Terminated"
       },
       "subtitle": "Review and manage employment applications",
       "title": "Applicants"
@@ -115,6 +123,14 @@
   },
   "auth": {
     "email": "Email",
+    "forgotPassword": "Forgot your password?",
+    "forgot": {
+      "subtitle": "Reset your password",
+      "instructions": "Enter your account email and we'll send you a link to reset your password.",
+      "submit": "Send reset link",
+      "sentMessage": "If an account exists for that email, a password reset link is on its way. Check your inbox.",
+      "backToLogin": "Back to sign in"
+    },
     "invalidCredentials": "Invalid email or password.",
     "password": "Password",
     "sessionExpired": "Your session has expired. Please sign in again.",
@@ -249,6 +265,7 @@
     "currentPassword": "Current password",
     "email": "Email",
     "fullName": "Full name",
+    "mustChangePassword": "An administrator assigned you a temporary password. Please set a new password to continue.",
     "newPassword": "New password",
     "passwordChanged": "Password changed.",
     "passwordsNoMatch": "The new passwords don't match.",
@@ -383,6 +400,8 @@
       "openInNewTab": "Open in new tab",
       "reject": "Reject",
       "rejectedOk": "Credential rejected",
+      "rotate": "Rotate 90°",
+      "rotateError": "Could not rotate the image",
       "reviewError": "Error reviewing credential",
       "reviewNotesLabel": "Review Notes (optional)",
       "reviewNotesPlaceholder": "Add notes about your decision...",
@@ -494,7 +513,16 @@
       "resetPasswordError": "Failed to reset password",
       "resetPasswordMessage": "Are you sure you want to reset the password for {{firstName}} {{lastName}}?\n\nThe current password will stop working and a password reset email will be sent to the employee.",
       "resetPasswordOk": "Password reset email sent to the employee",
-      "resetPasswordTitle": "Reset Password"
+      "resetPasswordTitle": "Reset Password",
+      "setPasswordConfirm": "Confirm temporary password",
+      "setPasswordError": "Failed to set the password",
+      "setPasswordMessage": "Assign a temporary password for {{firstName}} {{lastName}}. They'll be required to change it on next login. Use this for employees without an email address.",
+      "setPasswordNew": "Temporary password",
+      "setPasswordNoMatch": "The passwords don't match.",
+      "setPasswordOk": "Temporary password set. Share it with the employee; they'll change it on next login.",
+      "setPasswordSubmit": "Set password",
+      "setPasswordTitle": "Set Temporary Password",
+      "setPasswordTooShort": "The password must be at least 8 characters."
     },
     "accountDeactivated": "Account deactivated",
     "accountLocked": "Account locked",
@@ -543,6 +571,11 @@
     "credentials": {
       "addCredential": "Add Credential",
       "credentialNumber": "Credential #",
+      "deleteCredential": "Delete credential",
+      "deleteTitle": "Delete credential",
+      "deleteMessage": "Delete the {{type}} credential and all its documents? This can't be undone.",
+      "deleteOk": "Credential deleted",
+      "deleteError": "Error deleting credential",
       "empty": "No credentials on file.",
       "expiration": "Expiration",
       "expired": "Expired",
@@ -590,7 +623,8 @@
       "activateAccount": "Activate account",
       "deactivateAccount": "Deactivate account",
       "noAccountLinked": "No user account linked",
-      "resetPassword": "Reset password (resend setup link)"
+      "resetPassword": "Reset password (resend setup link)",
+      "setPassword": "Set temporary password"
     },
     "moreActions": "More actions",
     "na": "N/A",
@@ -792,6 +826,12 @@
       "reasonMissing": "{{count}} missing",
       "reasonNeedsRenewal": "{{count}} needs renewal",
       "reasonPendingReview": "{{count}} pending review",
+      "reasonRejected": "{{count}} rejected",
+      "rejectedTitle": "Rejected — Action Required",
+      "rejectedSub": "An administrator could not accept these documents. Please upload a clearer copy.",
+      "rejectionReason": "Reason",
+      "reupload": "Re-upload",
+      "reuploadUnavailable": "This credential type is no longer required for your positions. Contact your administrator.",
       "renew": "Renew",
       "renewCredential": "Renew credential",
       "renewalSubmitted": "Renewal submitted for review",
@@ -838,10 +878,12 @@
       "aiUnavailable": "AI analysis unavailable. Please fill in the fields manually.",
       "analyzingAi": "Analyzing document with AI...",
       "back": "Back",
+      "blurryWarning": "That photo looks blurry. For best results, hold steady and retake it in good light so the text is sharp.",
       "clickOrDrag": "Click or drag & drop to upload",
       "credentialNumber": "Credential Number",
       "credentialSubmitted": "Credential submitted for review",
       "documentImages": "Document Images (front & back if applicable)",
+      "documentRequired": "This credential requires at least one document image before you can submit it.",
       "expirationDate": "Expiration Date",
       "failedToSubmit": "Failed to submit credential",
       "front": "Front",
@@ -849,10 +891,12 @@
       "issueDate": "Issue Date",
       "issuer": "Issuer",
       "partialUploadError": "Credential created but some documents failed to upload",
+      "partialUploadRetry": "{{count}} document(s) failed to upload — they're still selected, tap submit to retry.",
       "previewAlt": "Preview {{n}}",
       "submitForReview": "Submit for Review",
       "submitRenewal": "Submit Renewal",
       "submitting": "Submitting...",
+      "takePhoto": "Take photo",
       "titleRenew": "Renew",
       "titleSubmit": "Submit"
     }
@@ -871,6 +915,11 @@
     "positions": "Positions",
     "reports": "Reports",
     "signOut": "Sign Out"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You're all caught up.",
+    "untitled": "Notification"
   },
   "map": {
     "title": "Caregiver Map",

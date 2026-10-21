@@ -33,6 +33,12 @@ export class DocumentService {
     return this.http.delete<void>(`${this.apiUrl}/${publicId}`);
   }
 
+  /** Rotate a stored JPEG/PNG document (degrees clockwise: 90/180/270). Persisted server-side. */
+  rotate(publicId: string, degrees: number = 90): Observable<DocumentResponse> {
+    return this.http.post<DocumentResponse>(
+      `${this.apiUrl}/${publicId}/rotate`, {}, { params: { degrees: String(degrees) } });
+  }
+
   extractData(files: File[], credentialTypeName: string): Observable<AiExtractionResponse> {
     const formData = new FormData();
     files.forEach(f => formData.append('files', f));

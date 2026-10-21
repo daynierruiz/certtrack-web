@@ -15,9 +15,10 @@ import { CredentialType } from '../../core/models/credential.model';
 import { MyProfileService } from '../../core/services/my-profile.service';
 import { DocumentService } from '../../core/services/document.service';
 import { AiExtractionResponse } from '../../core/models/document.model';
-import { UPLOAD_ACCEPT, prepareFileForUpload } from '../../core/utils/file-prep.util';
+import { UPLOAD_ACCEPT, prepareFileForUpload, estimateSharpness, BLUR_VARIANCE_THRESHOLD } from '../../core/utils/file-prep.util';
 import { toLocalIsoDate } from '../../core/utils/date.util';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-my-profile-upload-dialog',
@@ -59,6 +60,17 @@ import { forkJoin } from 'rxjs';
             <input #fileInput type="file" [accept]="uploadAccept"
                    (change)="onFileSelected($event)" multiple hidden>
           </div>
+          @if (canCapture) {
+            <button mat-stroked-button color="primary" class="capture-btn"
+                    (click)="cameraInput.click()" [disabled]="extracting">
+              <mat-icon>photo_camera</mat-icon>
+              {{ 'myProfile.upload.takePhoto' | transloco }}
+            </button>
+            <!-- Rear camera, one shot at a time; "add more" repeats it. The OS
+                 camera handles autofocus; we enhance and quality-check the result. -->
+            <input #cameraInput type="file" accept="image/*" capture="environment"
+                   (change)="onFileSelected($event)" hidden>
+          }
           @if (selectedFiles.length > 0 && !extracting) {
             @for (file of selectedFiles; track $index) {
               <div class="file-info">
@@ -153,6 +165,7 @@ import { forkJoin } from 'rxjs';
       font-size: 13px;
     }
     .add-more-btn { margin-top: 8px; }
+    .capture-btn { margin-top: 8px; width: 100%; }
     .ai-badge {
       display: flex; align-items: center; gap: 6px;
       padding: 8px 12px; margin-top: 8px; border-radius: 4px;
@@ -173,11 +186,21 @@ export class MyProfileUploadDialogComponent {
   selectedFiles: File[] = [];
   imagePreviews: string[] = [];
   uploadAccept = UPLOAD_ACCEPT;
+  /** Touch devices (phones/tablets) get a direct "Take photo" button → rear camera. */
+  readonly canCapture = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches;
   saving = false;
   uploading = false;
   extracting = false;
   extractionDone = false;
   aiConfidence: number | null = null;
+  /**
+   * Set once the credential row has been created, so a retry after a partial
+   * document-upload failure re-uploads the remaining files against the SAME
+   * credential instead of creating a duplicate PENDING_REVIEW.
+   */
+  private createdCredentialPublicId: string | null = null;
 
   constructor(
     private dialogRef: MatDialogRef<MyProfileUploadDialogComponent>,
@@ -222,6 +245,7 @@ export class MyProfileUploadDialogComponent {
     // exceed the AI API's 5MB-per-image limit even when the backend's 10MB
     // limit would accept them.
     let rejectedCount = 0;
+    let blurryCount = 0;
     for (const file of toAdd) {
       let prepared: File;
       try {
@@ -238,11 +262,24 @@ export class MyProfileUploadDialogComponent {
           this.imagePreviews[idx] = reader.result as string;
         };
         reader.readAsDataURL(prepared);
+
+        // Soft focus check — warn, never block. The OS camera autofocuses; this
+        // just catches an obviously blurry capture so the user can retake it.
+        try {
+          const sharpness = await estimateSharpness(prepared);
+          if (sharpness !== null && sharpness < BLUR_VARIANCE_THRESHOLD) blurryCount++;
+        } catch {
+          /* ignore — quality check is best-effort */
+        }
       }
     }
 
     if (rejectedCount > 0) {
       this.snackBar.open(this.transloco.translate('common.unsupportedFileType'), 'OK', { duration: 5000 });
+    }
+    if (blurryCount > 0) {
+      this.snackBar.open(this.transloco.translate('myProfile.upload.blurryWarning'),
+        this.transloco.translate('common.close'), { duration: 6000 });
     }
 
     this.extractionDone = false;
@@ -300,7 +337,21 @@ export class MyProfileUploadDialogComponent {
   }
 
   onSubmit(): void {
+    // F-4: a credential type flagged requiresDocument cannot be submitted with no
+    // image/document — an empty PENDING_REVIEW gives the admin nothing to review.
+    if (this.data.credentialType.requiresDocument && this.selectedFiles.length === 0) {
+      this.snackBar.open(this.transloco.translate('myProfile.upload.documentRequired'), 'OK', { duration: 4000 });
+      return;
+    }
+
     this.saving = true;
+
+    // Retry path: credential already created on a previous attempt whose uploads
+    // partially failed — skip re-creating it, just (re)upload the remaining files.
+    if (this.createdCredentialPublicId) {
+      this.uploadDocuments(this.createdCredentialPublicId);
+      return;
+    }
 
     const request = {
       agencyPublicId: this.data.agencyPublicId,
@@ -315,30 +366,55 @@ export class MyProfileUploadDialogComponent {
 
     this.myProfileService.submitCredential(request).subscribe({
       next: (credential) => {
-        if (this.selectedFiles.length > 0) {
-          this.uploading = true;
-          const uploads = this.selectedFiles.map(f =>
-            this.myProfileService.uploadDocument(f, credential.publicId)
-          );
-          forkJoin(uploads).subscribe({
-            next: () => {
-              this.snackBar.open(this.transloco.translate('myProfile.upload.credentialSubmitted'), 'OK', { duration: 3000 });
-              this.dialogRef.close(true);
-            },
-            error: () => {
-              this.snackBar.open(this.transloco.translate('myProfile.upload.partialUploadError'), 'OK', { duration: 5000 });
-              this.dialogRef.close(true);
-            }
-          });
-        } else {
-          this.snackBar.open(this.transloco.translate('myProfile.upload.credentialSubmitted'), 'OK', { duration: 3000 });
-          this.dialogRef.close(true);
-        }
+        this.createdCredentialPublicId = credential.publicId;
+        this.uploadDocuments(credential.publicId);
       },
       error: (err) => {
         this.saving = false;
         this.snackBar.open(err.error?.message || this.transloco.translate('myProfile.upload.failedToSubmit'), 'Close', { duration: 5000 });
       }
+    });
+  }
+
+  /**
+   * Upload every selected file against the credential. Each upload is isolated
+   * (one failure does not abort the others). On full success the dialog closes;
+   * on partial failure the dialog STAYS OPEN with only the failed files left, so
+   * the user can retry them without duplicating the credential (F-7).
+   */
+  private uploadDocuments(credentialPublicId: string): void {
+    if (this.selectedFiles.length === 0) {
+      this.saving = false;
+      this.snackBar.open(this.transloco.translate('myProfile.upload.credentialSubmitted'), 'OK', { duration: 3000 });
+      this.dialogRef.close(true);
+      return;
+    }
+
+    this.uploading = true;
+    const uploads = this.selectedFiles.map((f, i) =>
+      this.myProfileService.uploadDocument(f, credentialPublicId).pipe(
+        map(() => ({ index: i, ok: true })),
+        catchError(() => of({ index: i, ok: false }))
+      )
+    );
+
+    forkJoin(uploads).subscribe(results => {
+      this.uploading = false;
+      this.saving = false;
+      const failedIdx = results.filter(r => !r.ok).map(r => r.index);
+
+      if (failedIdx.length === 0) {
+        this.snackBar.open(this.transloco.translate('myProfile.upload.credentialSubmitted'), 'OK', { duration: 3000 });
+        this.dialogRef.close(true);
+        return;
+      }
+
+      // Keep only the files that failed, aligned with their previews, for retry.
+      this.selectedFiles = failedIdx.map(i => this.selectedFiles[i]);
+      this.imagePreviews = failedIdx.map(i => this.imagePreviews[i]);
+      this.snackBar.open(
+        this.transloco.translate('myProfile.upload.partialUploadRetry', { count: failedIdx.length }),
+        'OK', { duration: 6000 });
     });
   }
 

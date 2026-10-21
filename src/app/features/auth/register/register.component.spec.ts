@@ -43,7 +43,8 @@ function makeMe(role: string): MeResponse {
   return {
     userPublicId: 'u-1', agencyPublicId: 'ag-1', agencyName: 'Care Agency',
     employeePublicId: role === 'EMPLOYEE' ? 'emp-1' : null,
-    email: 'invitee@care.com', fullName: 'Invitee', role
+    email: 'invitee@care.com', fullName: 'Invitee', role,
+    mustChangePassword: false
   };
 }
 

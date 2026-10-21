@@ -18,6 +18,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ApplicantService } from '../../../core/services/applicant.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { PositionService } from '../../../core/services/position.service';
@@ -62,6 +64,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
             <mat-option value="ALL">{{ 'applicant.list.filterAll' | transloco }}</mat-option>
             <mat-option value="APPLICANT">{{ 'applicant.list.status.APPLICANT' | transloco }}</mat-option>
             <mat-option value="ONBOARDING">{{ 'applicant.list.status.ONBOARDING' | transloco }}</mat-option>
+            <mat-option value="TERMINATED">{{ 'applicant.list.status.TERMINATED' | transloco }}</mat-option>
           </mat-select>
         </mat-form-field>
 
@@ -233,6 +236,11 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
         <button mat-menu-item (click)="onReject(row)">
           <mat-icon color="warn">cancel</mat-icon> {{ 'applicant.list.removeBtn' | transloco }}
         </button>
+      } @else if (row.status === 'TERMINATED') {
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="onRehire(row)">
+          <mat-icon color="primary">replay</mat-icon> {{ 'applicant.list.rehireBtn' | transloco }}
+        </button>
       }
     </ng-template>
   `,
@@ -259,6 +267,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog.component
     }
     .status-applicant { background: #e3f2fd; color: #1565c0; }
     .status-onboarding { background: #fff3e0; color: #e65100; }
+    .status-terminated { background: #ffebee; color: #c62828; }
     @media (max-width: 768px) {
       .mat-column-phone, .mat-column-date, .mat-column-languages, .mat-column-school {
         display: none;
@@ -293,13 +302,14 @@ export class ApplicantListComponent implements OnInit {
 
   // Filters
   search = '';
-  statusFilter: 'ALL' | 'APPLICANT' | 'ONBOARDING' = 'ALL';
+  statusFilter: 'ALL' | 'APPLICANT' | 'ONBOARDING' | 'TERMINATED' = 'ALL';
   positionFilter = '';
 
   private readonly statusMap: Record<string, string> = {
     APPLICANT: 'applicant.list.status.APPLICANT',
     ONBOARDING: 'applicant.list.status.ONBOARDING',
     ACTIVE: 'applicant.list.status.ACTIVE',
+    TERMINATED: 'applicant.list.status.TERMINATED',
     REJECTED: 'applicant.list.status.REJECTED'
   };
 
@@ -337,15 +347,56 @@ export class ApplicantListComponent implements OnInit {
 
   loadApplicants(): void {
     this.loading = true;
-    this.applicantService.listApplicants().subscribe({
-      next: (data) => {
-        this.applicants = data;
+    // Active pipeline (APPLICANT/ONBOARDING) plus rejected/terminated so an admin
+    // can re-hire someone whose fresh public application would silently no-op on
+    // the globally-unique email (F-5).
+    forkJoin({
+      active: this.applicantService.listApplicants(),
+      rejected: this.applicantService.listRejected().pipe(catchError(() => of([] as ApplicantResponse[])))
+    }).subscribe({
+      next: ({ active, rejected }) => {
+        this.applicants = [...active, ...rejected];
         this.applyFilters();
         this.loading = false;
       },
       error: () => {
         this.loading = false;
       }
+    });
+  }
+
+  onRehire(applicant: ApplicantResponse): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      maxWidth: '95vw',
+      data: {
+        title: this.transloco.translate('applicant.list.rehireDialog.title'),
+        message: this.transloco.translate('applicant.list.rehireDialog.message', {
+          firstName: applicant.firstName,
+          lastName: applicant.lastName
+        }),
+        confirmText: this.transloco.translate('applicant.list.rehireBtn'),
+        icon: 'replay',
+        color: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.applicantService.rehire(applicant.publicId).subscribe({
+        next: () => {
+          this.snackBar.open(
+            this.transloco.translate('applicant.list.rehiredSnack', {
+              firstName: applicant.firstName,
+              lastName: applicant.lastName
+            }),
+            'OK', { duration: 3000 });
+          // Status moved TERMINATED → ONBOARDING; reload to reflect both lists.
+          this.loadApplicants();
+        },
+        error: (err) => {
+          this.snackBar.open(err.error?.message || this.transloco.translate('applicant.list.rehireError'), 'OK', { duration: 5000 });
+        }
+      });
     });
   }
 

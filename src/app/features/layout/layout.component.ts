@@ -13,6 +13,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { LanguageService } from '../../core/services/language.service';
 import { CoraChatComponent } from '../cora/cora-chat.component';
+import { NotificationBellComponent } from './notification-bell.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -22,7 +23,7 @@ import { environment } from '../../../environments/environment';
     CommonModule, RouterModule, RouterOutlet,
     MatSidenavModule, MatToolbarModule, MatListModule,
     MatIconModule, MatButtonModule, MatMenuModule,
-    TranslocoModule, CoraChatComponent
+    TranslocoModule, CoraChatComponent, NotificationBellComponent
   ],
   template: `
     <mat-sidenav-container class="app-container">
@@ -130,6 +131,8 @@ import { environment } from '../../../environments/environment';
               </button>
             }
           </mat-menu>
+
+          <app-notification-bell></app-notification-bell>
 
           <button mat-icon-button [matMenuTriggerFor]="userMenu">
             <mat-icon>account_circle</mat-icon>

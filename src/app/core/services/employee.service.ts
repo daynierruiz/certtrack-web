@@ -62,6 +62,16 @@ export class EmployeeService {
       `${this.apiUrl}/${employeePublicId}/account/reset-password`, {}
     );
   }
+
+  /**
+   * Admin: assign a temporary password directly (no email). The employee must
+   * change it on next login. Use for caregivers without an email address.
+   */
+  setPassword(employeePublicId: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/${employeePublicId}/account/set-password`, { newPassword }
+    );
+  }
 }
 
 export interface EmployeeAccount {
