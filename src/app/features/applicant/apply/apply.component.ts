@@ -125,7 +125,7 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
                   </mat-select>
                 </mat-form-field>
 
-                <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+                <mat-form-field appearance="outline" class="full-width has-hint" subscriptSizing="dynamic">
                   <mat-label>{{ 'applicant.apply.languages' | transloco }}</mat-label>
                   <mat-select [(ngModel)]="languages" name="languages" multiple required>
                     @for (lang of languageOptions; track lang.value) {
@@ -143,7 +143,7 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
                   </mat-form-field>
                 }
 
-                <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+                <mat-form-field appearance="outline" class="full-width has-hint" subscriptSizing="dynamic">
                   <mat-label>{{ 'applicant.apply.school' | transloco }}</mat-label>
                   <input matInput [(ngModel)]="schoolName" name="schoolName"
                          required maxlength="255"
@@ -152,7 +152,7 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
                   <mat-hint>{{ 'applicant.apply.schoolHint' | transloco }}</mat-hint>
                 </mat-form-field>
 
-                <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
+                <mat-form-field appearance="outline" class="full-width has-hint" subscriptSizing="dynamic">
                   <mat-label>{{ 'applicant.apply.address' | transloco }}</mat-label>
                   <input matInput
                          name="addressSearch"
@@ -324,6 +324,11 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
     }
     .form-row mat-form-field { flex: 1; }
     .full-width { width: 100%; }
+    /* Fields that show a hint use subscriptSizing="dynamic", which drops the
+       reserved subscript space — so the hint (often two lines on mobile) sits
+       flush against the next field's floating label and looks cramped. Give them
+       a clear gap below so the hint always breathes above the next field. */
+    .full-width.has-hint { margin-bottom: 18px; }
     .submit-btn {
       margin-top: 16px;
       height: 48px;
@@ -435,7 +440,7 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
       height: 24px;
     }
     @media (max-width: 480px) {
-      .form-row { flex-direction: column; gap: 0; }
+      .form-row { flex-direction: column; gap: 4px; }
       .apply-card { padding: 20px; }
     }
   `]
