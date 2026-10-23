@@ -69,7 +69,8 @@ import { environment } from '../../../environments/environment';
                 </div>
               }
               @if (data.employees.applicants > 0) {
-                <div class="action-item clickable" [routerLink]="['/applicants']">
+                <div class="action-item clickable" [routerLink]="['/applicants']"
+                     [queryParams]="{ status: 'APPLICANT' }">
                   <mat-icon class="action-icon applicant">person_add</mat-icon>
                   <span class="action-text"><strong>{{ data.employees.applicants }}</strong> {{ (data.employees.applicants === 1 ? 'dashboard.actionRequired.applicantsToReviewOne' : 'dashboard.actionRequired.applicantsToReviewMany') | transloco }}</span>
                   <mat-icon class="action-arrow">chevron_right</mat-icon>

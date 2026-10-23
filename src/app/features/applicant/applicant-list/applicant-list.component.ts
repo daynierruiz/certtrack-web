@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -325,7 +325,8 @@ export class ApplicantListComponent implements OnInit {
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private breakpointObserver: BreakpointObserver,
-    private transloco: TranslocoService
+    private transloco: TranslocoService,
+    private route: ActivatedRoute
   ) {
     this.breakpointObserver.observe([Breakpoints.Handset]).subscribe(result => {
       this.isMobile = result.matches;
@@ -333,6 +334,13 @@ export class ApplicantListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Honor a ?status= deep-link (e.g. the dashboard "applicants to review" alert
+    // links here pre-filtered to APPLICANT), so the admin lands on those results
+    // rather than the full list. applyFilters() runs after the data loads.
+    const status = this.route.snapshot.queryParamMap.get('status');
+    if (status === 'APPLICANT' || status === 'ONBOARDING' || status === 'TERMINATED') {
+      this.statusFilter = status;
+    }
     this.loadApplicants();
     this.loadPositions();
   }
