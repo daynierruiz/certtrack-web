@@ -221,24 +221,79 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
               <p class="sub-text">{{ 'applicant.apply.docsSubtitle' | transloco }}</p>
 
               <div class="doc-list">
-                @for (ct of requiredCredentialTypes; track ct.publicId) {
-                  <div class="doc-row">
-                    <div class="doc-info">
-                      <span class="doc-name">{{ ct.name }}</span>
-                      @if (ct.mandatory) {
-                        <span class="doc-req">{{ 'applicant.apply.docRequired' | transloco }}</span>
-                      } @else {
-                        <span class="doc-opt">{{ 'applicant.apply.docOptional' | transloco }}</span>
+                @for (entry of docEntries; track entry.type.publicId) {
+                  <div class="doc-card" [class.is-done]="entry.done">
+                    <div class="doc-card-head">
+                      <div class="doc-info">
+                        <span class="doc-name">{{ entry.type.name }}</span>
+                        @if (entry.type.mandatory) {
+                          <span class="doc-req">{{ 'applicant.apply.docRequired' | transloco }}</span>
+                        } @else {
+                          <span class="doc-opt">{{ 'applicant.apply.docOptional' | transloco }}</span>
+                        }
+                      </div>
+                      @if (entry.done) {
+                        <span class="doc-done"><mat-icon>check_circle</mat-icon> {{ 'applicant.apply.docSaved' | transloco }}</span>
                       }
                     </div>
-                    @if (docStatus(ct.publicId) === 'done') {
-                      <span class="doc-done"><mat-icon>check_circle</mat-icon> {{ 'applicant.apply.docUploaded' | transloco }}</span>
-                    } @else if (docStatus(ct.publicId) === 'uploading') {
-                      <mat-spinner diameter="22"></mat-spinner>
-                    } @else {
-                      <button mat-stroked-button color="primary" (click)="pickDocFor(ct, docInput)">
+
+                    @if (!entry.done) {
+                      <button mat-stroked-button color="primary" type="button" class="doc-file-btn"
+                              (click)="pickFileFor(entry, docInput)" [disabled]="entry.extracting || entry.saving">
                         <mat-icon>{{ canCapture ? 'photo_camera' : 'upload' }}</mat-icon>
-                        {{ (docStatus(ct.publicId) === 'error' ? 'applicant.apply.docRetry' : 'applicant.apply.docUpload') | transloco }}
+                        {{ (entry.file ? 'applicant.apply.docChangeFile' : 'applicant.apply.docPickFile') | transloco }}
+                      </button>
+                      @if (entry.fileName) {
+                        <div class="doc-file-name"><mat-icon>description</mat-icon> {{ entry.fileName }}</div>
+                      }
+
+                      @if (entry.extracting) {
+                        <div class="doc-extracting">
+                          <mat-spinner diameter="18"></mat-spinner>
+                          <span>{{ 'applicant.apply.docExtracting' | transloco }}</span>
+                        </div>
+                      } @else if (entry.aiFilled) {
+                        <div class="doc-ai-note">
+                          <mat-icon>auto_awesome</mat-icon>
+                          <span>{{ 'applicant.apply.docAiFilled' | transloco }}</span>
+                        </div>
+                      }
+
+                      <div class="doc-fields">
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                          <mat-label>{{ 'applicant.apply.docIssueDate' | transloco }}</mat-label>
+                          <input matInput type="date" [(ngModel)]="entry.issueDate"
+                                 [ngModelOptions]="{ standalone: true }">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                          <mat-label>{{ 'applicant.apply.docExpirationDate' | transloco }}</mat-label>
+                          <input matInput type="date" [(ngModel)]="entry.expirationDate"
+                                 [ngModelOptions]="{ standalone: true }">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                          <mat-label>{{ 'applicant.apply.docIssuer' | transloco }}</mat-label>
+                          <input matInput [(ngModel)]="entry.issuer" maxlength="150"
+                                 [ngModelOptions]="{ standalone: true }">
+                        </mat-form-field>
+                        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                          <mat-label>{{ 'applicant.apply.docCredentialNumber' | transloco }}</mat-label>
+                          <input matInput [(ngModel)]="entry.credentialNumber" maxlength="100"
+                                 [ngModelOptions]="{ standalone: true }">
+                        </mat-form-field>
+                      </div>
+
+                      @if (entry.error) {
+                        <div class="error-message">{{ entry.error }}</div>
+                      }
+
+                      <button mat-raised-button color="primary" type="button" class="full-width doc-save-btn"
+                              (click)="saveEntry(entry)"
+                              [disabled]="entry.saving || entry.extracting || !entry.file">
+                        @if (entry.saving) {
+                          <mat-spinner diameter="20"></mat-spinner>
+                        } @else {
+                          {{ 'applicant.apply.docSave' | transloco }}
+                        }
                       </button>
                     }
                   </div>
@@ -247,9 +302,9 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
 
               <input #docInput type="file" accept="image/*,application/pdf" hidden
                      [attr.capture]="canCapture ? 'environment' : null"
-                     (change)="onDocSelected($event)">
+                     (change)="onDocFileSelected($event)">
 
-              <button mat-raised-button color="primary" class="full-width" (click)="finishDocs()">
+              <button mat-raised-button color="primary" class="full-width docs-finish-btn" (click)="finishDocs()">
                 {{ 'applicant.apply.docsFinish' | transloco }}
               </button>
               <p class="sub-text skip-note">{{ 'applicant.apply.docsSkipNote' | transloco }}</p>
@@ -398,6 +453,30 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
     .doc-opt { font-size: 11px; color: #888; }
     .doc-done { display: inline-flex; align-items: center; gap: 4px; color: #2e7d32; font-size: 13px; }
     .doc-done mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .doc-card {
+      border: 1px solid #e0e0e0; border-radius: 12px; padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .doc-card.is-done { background: #f1f8f2; border-color: #c8e6c9; }
+    .doc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .doc-file-btn { align-self: flex-start; }
+    .doc-file-name {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13px; color: #555; word-break: break-all;
+    }
+    .doc-file-name mat-icon { font-size: 18px; width: 18px; height: 18px; color: #888; }
+    .doc-extracting, .doc-ai-note {
+      display: inline-flex; align-items: center; gap: 8px; font-size: 13px;
+    }
+    .doc-extracting { color: #1565c0; }
+    .doc-ai-note { color: #6a1b9a; }
+    .doc-ai-note mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .doc-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-top: 2px; }
+    .doc-save-btn { margin-top: 2px; }
+    .docs-finish-btn { margin-top: 18px; }
+    @media (max-width: 480px) {
+      .doc-fields { grid-template-columns: 1fr; }
+    }
     .skip-note { margin-top: 10px; font-size: 12px; }
     .success-container h2 {
       color: #1a237e;
@@ -468,11 +547,12 @@ export class ApplyComponent implements OnInit {
   submitted = false;
   errorMessage = '';
 
-  // Post-submit document step (upload one file per required credential type).
+  // Post-submit credential step: one credential + document per required type,
+  // with AI-assisted field extraction — mirrors the logged-in credential create.
   uploadToken: string | null = null;
   requiredCredentialTypes: RequiredCredentialType[] = [];
-  uploadStatus: Record<string, 'idle' | 'uploading' | 'done' | 'error'> = {};
-  pendingType: RequiredCredentialType | null = null;
+  docEntries: DocEntry[] = [];
+  pendingEntry: DocEntry | null = null;
   docsDone = false;
   readonly canCapture = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
@@ -609,6 +689,11 @@ export class ApplyComponent implements OnInit {
         this.submitted = true;
         this.uploadToken = res.uploadToken;
         this.requiredCredentialTypes = res.requiredCredentialTypes || [];
+        this.docEntries = this.requiredCredentialTypes.map(type => ({
+          type, file: null, fileName: '', extracting: false, saving: false,
+          done: false, aiFilled: false, error: null,
+          issueDate: '', expirationDate: '', issuer: '', credentialNumber: ''
+        }));
       },
       error: (err) => {
         this.loading = false;
@@ -619,35 +704,91 @@ export class ApplyComponent implements OnInit {
 
   get showDocsStep(): boolean {
     return this.submitted && !!this.uploadToken
-        && this.requiredCredentialTypes.length > 0 && !this.docsDone;
+        && this.docEntries.length > 0 && !this.docsDone;
   }
 
-  docStatus(publicId: string): 'idle' | 'uploading' | 'done' | 'error' {
-    return this.uploadStatus[publicId] || 'idle';
-  }
-
-  pickDocFor(ct: RequiredCredentialType, input: HTMLInputElement): void {
-    if (this.docStatus(ct.publicId) === 'uploading') return;
-    this.pendingType = ct;
+  pickFileFor(entry: DocEntry, input: HTMLInputElement): void {
+    if (entry.saving || entry.extracting) return;
+    this.pendingEntry = entry;
+    input.value = '';
     input.click();
   }
 
-  onDocSelected(event: Event): void {
+  onDocFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    const ct = this.pendingType;
-    if (!file || !ct || !this.uploadToken) return;
-    this.uploadStatus[ct.publicId] = 'uploading';
+    const entry = this.pendingEntry;
+    if (!file || !entry) return;
+    entry.error = null;
     prepareFileForUpload(file).then(prepared => {
-      this.applicantService.uploadApplicationDocument(this.uploadToken!, ct.publicId, prepared).subscribe({
-        next: () => { this.uploadStatus[ct.publicId] = 'done'; },
-        error: () => { this.uploadStatus[ct.publicId] = 'error'; }
-      });
-    }).catch(() => { this.uploadStatus[ct.publicId] = 'error'; });
+      entry.file = prepared;
+      entry.fileName = prepared.name;
+      this.runExtraction(entry);
+    }).catch(() => {
+      entry.error = this.transloco.translate('applicant.apply.docFileError');
+    });
+  }
+
+  /** Ask the backend (AI) to read the file and pre-fill the credential fields. */
+  private runExtraction(entry: DocEntry): void {
+    if (!entry.file || !this.uploadToken) return;
+    entry.extracting = true;
+    entry.aiFilled = false;
+    this.applicantService.extractApplicationData(this.uploadToken, [entry.file], entry.type.name).subscribe({
+      next: (res) => {
+        entry.extracting = false;
+        let filled = false;
+        // Only fill empty fields so we never overwrite what the applicant typed.
+        if (res.issueDate && !entry.issueDate) { entry.issueDate = res.issueDate; filled = true; }
+        if (res.expirationDate && !entry.expirationDate) { entry.expirationDate = res.expirationDate; filled = true; }
+        if (res.issuer && !entry.issuer) { entry.issuer = res.issuer; filled = true; }
+        if (res.credentialNumber && !entry.credentialNumber) { entry.credentialNumber = res.credentialNumber; filled = true; }
+        entry.aiFilled = filled;
+      },
+      error: () => { entry.extracting = false; /* silent — applicant fills manually */ }
+    });
+  }
+
+  saveEntry(entry: DocEntry): void {
+    if (!entry.file) {
+      entry.error = this.transloco.translate('applicant.apply.docFileRequired');
+      return;
+    }
+    if (!this.uploadToken) return;
+    entry.saving = true;
+    entry.error = null;
+    this.applicantService.uploadApplicationDocument(this.uploadToken, entry.type.publicId, entry.file, {
+      issueDate: entry.issueDate || undefined,
+      expirationDate: entry.expirationDate || undefined,
+      issuer: entry.issuer?.trim() || undefined,
+      credentialNumber: entry.credentialNumber?.trim() || undefined
+    }).subscribe({
+      next: () => { entry.saving = false; entry.done = true; },
+      error: (err) => {
+        entry.saving = false;
+        entry.error = err.error?.message || this.transloco.translate('applicant.apply.docSaveError');
+      }
+    });
   }
 
   finishDocs(): void {
     this.docsDone = true;
   }
+}
+
+/** One required credential the applicant can fill + upload after submitting. */
+interface DocEntry {
+  type: RequiredCredentialType;
+  file: File | null;
+  fileName: string;
+  extracting: boolean;
+  saving: boolean;
+  done: boolean;
+  aiFilled: boolean;
+  error: string | null;
+  issueDate: string;
+  expirationDate: string;
+  issuer: string;
+  credentialNumber: string;
 }

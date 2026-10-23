@@ -12,6 +12,7 @@ import {
   SetupTokenResponse
 } from '../models/applicant.model';
 import { AuthResponse } from '../models/auth.model';
+import { AiExtractionResponse } from '../models/document.model';
 
 @Injectable({ providedIn: 'root' })
 export class ApplicantService {
@@ -25,18 +26,36 @@ export class ApplicantService {
     return this.http.post<ApplicantRegistrationResult>(`${this.apiUrl}/register`, request);
   }
 
-  /** Public: attach a document to the just-submitted application (token-gated). */
+  /**
+   * Public: create the credential + attach its document to the just-submitted
+   * application (token-gated). Mirrors the logged-in credential create: carries
+   * issue/expiration dates, issuer, number and notes.
+   */
   uploadApplicationDocument(
     token: string, credentialTypePublicId: string, file: File,
-    issueDate?: string, expirationDate?: string
+    data?: { issueDate?: string; expirationDate?: string; issuer?: string; credentialNumber?: string; notes?: string }
   ): Observable<void> {
     const fd = new FormData();
     fd.append('token', token);
     fd.append('credentialTypePublicId', credentialTypePublicId);
     fd.append('file', file);
-    if (issueDate) fd.append('issueDate', issueDate);
-    if (expirationDate) fd.append('expirationDate', expirationDate);
+    if (data?.issueDate) fd.append('issueDate', data.issueDate);
+    if (data?.expirationDate) fd.append('expirationDate', data.expirationDate);
+    if (data?.issuer) fd.append('issuer', data.issuer);
+    if (data?.credentialNumber) fd.append('credentialNumber', data.credentialNumber);
+    if (data?.notes) fd.append('notes', data.notes);
     return this.http.post<void>(`${this.apiUrl}/documents`, fd);
+  }
+
+  /** Public (token-gated): AI-assisted extraction of credential fields from file(s). */
+  extractApplicationData(
+    token: string, files: File[], credentialTypeName: string
+  ): Observable<AiExtractionResponse> {
+    const fd = new FormData();
+    fd.append('token', token);
+    fd.append('credentialTypeName', credentialTypeName);
+    files.forEach(f => fd.append('files', f));
+    return this.http.post<AiExtractionResponse>(`${this.apiUrl}/extract`, fd);
   }
 
   getPositions(agencySlug?: string): Observable<PublicPositionResponse[]> {
