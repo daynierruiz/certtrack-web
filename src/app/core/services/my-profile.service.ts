@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Credential, CredentialType, CredentialUpsertRequest } from '../models/credential.model';
 import { DocumentResponse } from '../models/document.model';
@@ -29,6 +29,7 @@ export interface MyProfileResponse {
   totalRequired: number;
   totalCompleted: number;
   positionEligibility: EmployeeEligibilityResponse[];
+  hasProfilePhoto: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -56,5 +57,19 @@ export class MyProfileService {
 
   updateAddress(request: EmployeeAddressUpdateRequest): Observable<EmployeeAddress> {
     return this.http.put<EmployeeAddress>(`${this.apiUrl}/address`, request);
+  }
+
+  /** Upload/replace my profile photo. */
+  uploadPhoto(file: File): Observable<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<void>(`${this.apiUrl}/photo`, formData);
+  }
+
+  /** My profile photo as a blob object URL (caller revokes it). */
+  getPhotoUrl(): Observable<string> {
+    return this.http.get(`${this.apiUrl}/photo`, { responseType: 'blob' }).pipe(
+      map(blob => URL.createObjectURL(blob))
+    );
   }
 }

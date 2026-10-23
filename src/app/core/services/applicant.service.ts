@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   ApplicantRegisterRequest,
+  ApplicantRegistrationResult,
   ApplicantResponse,
   PublicAgencyInfo,
   PublicPositionResponse,
@@ -20,8 +21,22 @@ export class ApplicantService {
   constructor(private http: HttpClient) {}
 
   // Public endpoints
-  register(request: ApplicantRegisterRequest): Observable<ApplicantResponse> {
-    return this.http.post<ApplicantResponse>(`${this.apiUrl}/register`, request);
+  register(request: ApplicantRegisterRequest): Observable<ApplicantRegistrationResult> {
+    return this.http.post<ApplicantRegistrationResult>(`${this.apiUrl}/register`, request);
+  }
+
+  /** Public: attach a document to the just-submitted application (token-gated). */
+  uploadApplicationDocument(
+    token: string, credentialTypePublicId: string, file: File,
+    issueDate?: string, expirationDate?: string
+  ): Observable<void> {
+    const fd = new FormData();
+    fd.append('token', token);
+    fd.append('credentialTypePublicId', credentialTypePublicId);
+    fd.append('file', file);
+    if (issueDate) fd.append('issueDate', issueDate);
+    if (expirationDate) fd.append('expirationDate', expirationDate);
+    return this.http.post<void>(`${this.apiUrl}/documents`, fd);
   }
 
   getPositions(agencySlug?: string): Observable<PublicPositionResponse[]> {

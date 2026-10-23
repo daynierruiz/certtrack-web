@@ -99,7 +99,7 @@ describe('ApplyComponent', () => {
 
   it('onSubmit sends the applyLinkKey so production (require-apply-link-key) accepts the registration', () => {
     const component = setup('apply-key-xyz');
-    applicantService.register.and.returnValue(of(makeApplicantResponse()));
+    applicantService.register.and.returnValue(of({ applicant: makeApplicantResponse(), uploadToken: null, requiredCredentialTypes: [] }));
     fillValidForm(component);
 
     component.onSubmit();
@@ -114,7 +114,7 @@ describe('ApplyComponent', () => {
 
   it('onSubmit marks the application as submitted (shows the "wait for approval" screen)', () => {
     const component = setup();
-    applicantService.register.and.returnValue(of(makeApplicantResponse()));
+    applicantService.register.and.returnValue(of({ applicant: makeApplicantResponse(), uploadToken: null, requiredCredentialTypes: [] }));
     fillValidForm(component);
 
     component.onSubmit();

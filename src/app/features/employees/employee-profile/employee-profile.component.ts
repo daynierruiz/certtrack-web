@@ -34,6 +34,10 @@ import { EmployeeEligibilityResponse, RequirementStatusResponse } from '../../..
 import { DocumentResponse } from '../../../core/models/document.model';
 import { EmployeeFormDialogComponent } from '../employee-form-dialog/employee-form-dialog.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog.component';
+import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
+import { BlacklistService } from '../../../core/services/blacklist.service';
+import { BlacklistEntry } from '../../../core/models/blacklist.model';
+import { BlacklistReasonDialogComponent } from '../../blacklist/blacklist-reason-dialog.component';
 import { SetPasswordDialogComponent } from './set-password-dialog.component';
 import { ContractService } from '../../../core/services/contract.service';
 import { Contract } from '../../../core/models/contract.model';
@@ -102,6 +106,11 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
                 </button>
                 <mat-divider></mat-divider>
               }
+              <button mat-menu-item (click)="addToBlacklist()">
+                <mat-icon color="warn">block</mat-icon>
+                <span>{{ 'blacklist.moveAction' | transloco }}</span>
+              </button>
+              <mat-divider></mat-divider>
               <button mat-menu-item (click)="goBack()">
                 <mat-icon>arrow_back</mat-icon>
                 <span>{{ 'employeeProfile.backToEmployees' | transloco }}</span>
@@ -113,9 +122,25 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
         <!-- Header Card -->
         <mat-card class="header-card">
           <div class="header-content">
-            <div class="avatar" [class]="'avatar-' + employee.status.toLowerCase()">
-              <mat-icon>person</mat-icon>
+            <div class="avatar avatar-clickable" [class]="'avatar-' + employee.status.toLowerCase()"
+                 (click)="!uploadingPhoto && photoInput.click()"
+                 [matTooltip]="(photoUrl ? 'employeeProfile.photo.changeHint' : 'employeeProfile.photo.addHint') | transloco">
+              @if (photoUrl) {
+                <img [src]="photoUrl" class="avatar-img" alt="">
+              } @else {
+                <mat-icon>person</mat-icon>
+              }
+              <div class="avatar-cam" [class.avatar-cam-warn]="!photoUrl">
+                @if (uploadingPhoto) {
+                  <mat-spinner diameter="18"></mat-spinner>
+                } @else {
+                  <mat-icon>photo_camera</mat-icon>
+                }
+              </div>
             </div>
+            <input #photoInput type="file" accept="image/jpeg,image/png,image/webp" hidden
+                   [attr.capture]="isMobile ? 'user' : null"
+                   (change)="onPhotoSelected($event)">
             <div class="header-info">
               <h1>{{ employee.lastName }}, {{ employee.firstName }}</h1>
               <div class="header-meta">
@@ -174,6 +199,22 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
             </div>
           </div>
         </mat-card>
+
+        <!-- Blacklist match warning -->
+        @if (blacklistMatches.length > 0) {
+          <div class="blacklist-banner">
+            <mat-icon>block</mat-icon>
+            <div class="blacklist-body">
+              <div class="blacklist-title">{{ 'blacklist.matchBannerTitle' | transloco }}</div>
+              <div class="blacklist-sub">
+                {{ 'blacklist.matchBannerSub' | transloco }}
+                @for (m of blacklistMatches; track m.publicId) {
+                  <span class="blacklist-reason">{{ m.reason || ('blacklist.noReason' | transloco) }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
 
         <!-- Hiring Roadmap (visible while not ACTIVE) -->
         <app-hiring-roadmap
@@ -747,11 +788,31 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
     .header-card { margin-bottom: 20px; }
     .header-content { display: flex; gap: 20px; padding: 8px; }
     .avatar {
+      position: relative;
       width: 72px; height: 72px; border-radius: 50%;
       background: linear-gradient(135deg, #1565c0, #0d47a1);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .avatar mat-icon { font-size: 36px; width: 36px; height: 36px; color: white; }
+    .avatar-clickable { cursor: pointer; }
+    .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .avatar-cam {
+      position: absolute; right: -2px; bottom: -2px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #1565c0; border: 2px solid #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .avatar-cam mat-icon { font-size: 14px; width: 14px; height: 14px; color: #fff; }
+    .avatar-cam-warn { background: #ef6c00; }
+    .blacklist-banner {
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-bottom: 16px; padding: 14px 18px; border-radius: 10px;
+      background: #ffebee; border: 1px solid #ef9a9a; color: #b71c1c;
+    }
+    .blacklist-banner > mat-icon { color: #c62828; flex-shrink: 0; }
+    .blacklist-title { font-weight: 600; }
+    .blacklist-sub { font-size: 13px; }
+    .blacklist-reason { display: block; margin-top: 2px; font-style: italic; }
     .avatar-applicant { background: linear-gradient(135deg, #1565c0, #42a5f5); }
     .avatar-onboarding { background: linear-gradient(135deg, #7b1fa2, #ab47bc); }
     .avatar-active { background: linear-gradient(135deg, #2e7d32, #66bb6a); }
@@ -1038,6 +1099,10 @@ export class EmployeeProfileComponent implements OnInit {
   expandedCredential: string | null = null;
   collapsedCategories = new Set<string>();
   historyOpen = false;
+  isMobile = false;
+  photoUrl: string | null = null;
+  uploadingPhoto = false;
+  blacklistMatches: BlacklistEntry[] = [];
 
   get validCount(): number {
     return this.credentials.filter(c => c.status === 'VALID').length;
@@ -1082,18 +1147,94 @@ export class EmployeeProfileComponent implements OnInit {
     private positionService: PositionService,
     private documentService: DocumentService,
     private contractService: ContractService,
+    private blacklistService: BlacklistService,
     private authService: AuthService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
     private breakpointObserver: BreakpointObserver,
     private transloco: TranslocoService
-  ) {}
+  ) {
+    this.breakpointObserver.observe([Breakpoints.Handset]).subscribe(r => this.isMobile = r.matches);
+  }
 
   ngOnInit(): void {
     const publicId = this.route.snapshot.paramMap.get('publicId');
     if (publicId) {
       this.loadEmployee(publicId);
     }
+  }
+
+  private loadPhoto(publicId: string): void {
+    this.employeeService.getPhotoUrl(publicId).subscribe({
+      next: (url) => {
+        if (this.photoUrl) URL.revokeObjectURL(this.photoUrl);
+        this.photoUrl = url;
+      },
+      error: () => {
+        // 404 = no photo on file yet → keep placeholder.
+        if (this.photoUrl) { URL.revokeObjectURL(this.photoUrl); this.photoUrl = null; }
+      }
+    });
+  }
+
+  addToBlacklist(): void {
+    if (!this.employee) return;
+    const emp = this.employee;
+    this.dialog.open(BlacklistReasonDialogComponent, {
+      width: '480px', maxWidth: '95vw',
+      data: { name: `${emp.firstName} ${emp.lastName}` }
+    }).afterClosed().subscribe((reason: string | undefined) => {
+      if (reason === undefined) return; // cancelled
+      this.blacklistService.addFromEmployee(emp.publicId, reason).subscribe({
+        next: () => {
+          this.snackBar.open(this.transloco.translate('blacklist.movedOk'), 'OK', { duration: 3000 });
+          this.blacklistService.matches(emp.publicId).subscribe({ next: m => this.blacklistMatches = m });
+        },
+        error: (err) => this.snackBar.open(
+          err.error?.message || this.transloco.translate('blacklist.addError'), 'OK', { duration: 5000 })
+      });
+    });
+  }
+
+  onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || !this.employee) return;
+    const publicId = this.employee.publicId;
+    this.uploadingPhoto = true;
+    prepareFileForUpload(file).then(prepared => {
+      this.employeeService.uploadPhoto(publicId, prepared).subscribe({
+        next: () => {
+          this.uploadingPhoto = false;
+          this.loadPhoto(publicId);
+          this.snackBar.open(this.transloco.translate('employeeProfile.photo.uploaded'), 'OK', { duration: 3000 });
+        },
+        error: (err) => {
+          this.uploadingPhoto = false;
+          this.snackBar.open(this.photoErrorMessage(err), 'OK', { duration: 6000 });
+        }
+      });
+    }).catch(() => {
+      this.uploadingPhoto = false;
+      this.snackBar.open(this.transloco.translate('common.unsupportedFileType'), 'OK', { duration: 4000 });
+    });
+  }
+
+  /** Localize a photo-upload error, mapping the AI face-validation reason codes. */
+  private photoErrorMessage(err: { error?: { message?: string } }): string {
+    const msg = err?.error?.message || '';
+    if (msg.startsWith('FACE_INVALID:')) {
+      const code = msg.substring('FACE_INVALID:'.length);
+      const key = ({
+        no_face: 'employeeProfile.photo.invalidNoFace',
+        multiple_faces: 'employeeProfile.photo.invalidMultiple',
+        not_a_person: 'employeeProfile.photo.invalidNotPerson',
+        low_quality: 'employeeProfile.photo.invalidLowQuality'
+      } as Record<string, string>)[code] || 'employeeProfile.photo.invalidOther';
+      return this.transloco.translate(key);
+    }
+    return msg || this.transloco.translate('employeeProfile.photo.uploadError');
   }
 
   loadEmployee(publicId: string): void {
@@ -1111,6 +1252,11 @@ export class EmployeeProfileComponent implements OnInit {
         this.credentials = credentials.content;
         this.positions = positions;
         this.credentialTypes = credTypes;
+        this.loadPhoto(employee.publicId);
+        this.blacklistService.matches(employee.publicId).subscribe({
+          next: m => this.blacklistMatches = m,
+          error: () => { this.blacklistMatches = []; }
+        });
 
         // Build credential type name map
         for (const ct of credTypes) {

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Employee, EmployeeMapPoint, EmployeeUpsertRequest } from '../models/employee.model';
 import { Page } from '../models/page.model';
@@ -47,6 +47,20 @@ export class EmployeeService {
 
   getAccount(employeePublicId: string): Observable<EmployeeAccount> {
     return this.http.get<EmployeeAccount>(`${this.apiUrl}/${employeePublicId}/account`);
+  }
+
+  /** Upload/replace an employee's profile photo (admin). */
+  uploadPhoto(employeePublicId: string, file: File): Observable<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<void>(`${this.apiUrl}/${employeePublicId}/photo`, formData);
+  }
+
+  /** Profile photo as a blob object URL; errors (incl. 404 = no photo) propagate to the caller. */
+  getPhotoUrl(employeePublicId: string): Observable<string> {
+    return this.http.get(`${this.apiUrl}/${employeePublicId}/photo`, { responseType: 'blob' }).pipe(
+      map(blob => URL.createObjectURL(blob))
+    );
   }
 
   setAccountActive(employeePublicId: string, active: boolean): Observable<EmployeeAccount> {

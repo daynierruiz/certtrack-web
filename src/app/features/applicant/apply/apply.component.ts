@@ -21,8 +21,10 @@ import {
   LANGUAGE_OPTIONS,
   LanguageCode,
   PublicAgencyInfo,
-  PublicPositionResponse
+  PublicPositionResponse,
+  RequiredCredentialType
 } from '../../../core/models/applicant.model';
+import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
 
 @Component({
   selector: 'app-apply',
@@ -104,8 +106,8 @@ import {
                 </mat-form-field>
 
                 <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>{{ 'applicant.apply.phoneOptional' | transloco }}</mat-label>
-                  <input matInput type="tel" [(ngModel)]="phone" name="phone" maxlength="30">
+                  <mat-label>{{ 'applicant.apply.phone' | transloco }}</mat-label>
+                  <input matInput type="tel" [(ngModel)]="phone" name="phone" required maxlength="30">
                   <mat-icon matSuffix>phone</mat-icon>
                 </mat-form-field>
 
@@ -210,6 +212,48 @@ import {
                 </button>
               </form>
             }
+          </mat-card-content>
+        } @else if (showDocsStep) {
+          <mat-card-content>
+            <div class="docs-step">
+              <mat-icon class="success-icon">cloud_upload</mat-icon>
+              <h2>{{ 'applicant.apply.docsTitle' | transloco }}</h2>
+              <p class="sub-text">{{ 'applicant.apply.docsSubtitle' | transloco }}</p>
+
+              <div class="doc-list">
+                @for (ct of requiredCredentialTypes; track ct.publicId) {
+                  <div class="doc-row">
+                    <div class="doc-info">
+                      <span class="doc-name">{{ ct.name }}</span>
+                      @if (ct.mandatory) {
+                        <span class="doc-req">{{ 'applicant.apply.docRequired' | transloco }}</span>
+                      } @else {
+                        <span class="doc-opt">{{ 'applicant.apply.docOptional' | transloco }}</span>
+                      }
+                    </div>
+                    @if (docStatus(ct.publicId) === 'done') {
+                      <span class="doc-done"><mat-icon>check_circle</mat-icon> {{ 'applicant.apply.docUploaded' | transloco }}</span>
+                    } @else if (docStatus(ct.publicId) === 'uploading') {
+                      <mat-spinner diameter="22"></mat-spinner>
+                    } @else {
+                      <button mat-stroked-button color="primary" (click)="pickDocFor(ct, docInput)">
+                        <mat-icon>{{ canCapture ? 'photo_camera' : 'upload' }}</mat-icon>
+                        {{ (docStatus(ct.publicId) === 'error' ? 'applicant.apply.docRetry' : 'applicant.apply.docUpload') | transloco }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+
+              <input #docInput type="file" accept="image/*,application/pdf" hidden
+                     [attr.capture]="canCapture ? 'environment' : null"
+                     (change)="onDocSelected($event)">
+
+              <button mat-raised-button color="primary" class="full-width" (click)="finishDocs()">
+                {{ 'applicant.apply.docsFinish' | transloco }}
+              </button>
+              <p class="sub-text skip-note">{{ 'applicant.apply.docsSkipNote' | transloco }}</p>
+            </div>
           </mat-card-content>
         } @else {
           <mat-card-content>
@@ -335,6 +379,21 @@ import {
       height: 64px;
       color: #4caf50;
     }
+    .docs-step { text-align: center; padding: 8px 0; }
+    .docs-step h2 { color: #1a237e; margin: 12px 0 4px; }
+    .docs-step .success-icon { color: #1565c0; }
+    .doc-list { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; text-align: left; }
+    .doc-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 14px; border: 1px solid #e0e0e0; border-radius: 10px;
+    }
+    .doc-info { display: flex; flex-direction: column; gap: 2px; }
+    .doc-name { font-weight: 500; }
+    .doc-req { font-size: 11px; color: #c62828; }
+    .doc-opt { font-size: 11px; color: #888; }
+    .doc-done { display: inline-flex; align-items: center; gap: 4px; color: #2e7d32; font-size: 13px; }
+    .doc-done mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .skip-note { margin-top: 10px; font-size: 12px; }
     .success-container h2 {
       color: #1a237e;
       margin: 16px 0 8px;
@@ -403,6 +462,16 @@ export class ApplyComponent implements OnInit {
   loading = false;
   submitted = false;
   errorMessage = '';
+
+  // Post-submit document step (upload one file per required credential type).
+  uploadToken: string | null = null;
+  requiredCredentialTypes: RequiredCredentialType[] = [];
+  uploadStatus: Record<string, 'idle' | 'uploading' | 'done' | 'error'> = {};
+  pendingType: RequiredCredentialType | null = null;
+  docsDone = false;
+  readonly canCapture = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches;
 
   // Honeypot — must stay empty. Bound to hidden input.
   website = '';
@@ -530,14 +599,50 @@ export class ApplyComponent implements OnInit {
       },
       website: this.website
     }).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading = false;
         this.submitted = true;
+        this.uploadToken = res.uploadToken;
+        this.requiredCredentialTypes = res.requiredCredentialTypes || [];
       },
       error: (err) => {
         this.loading = false;
         this.errorMessage = err.error?.message || this.transloco.translate('applicant.apply.submitError');
       }
     });
+  }
+
+  get showDocsStep(): boolean {
+    return this.submitted && !!this.uploadToken
+        && this.requiredCredentialTypes.length > 0 && !this.docsDone;
+  }
+
+  docStatus(publicId: string): 'idle' | 'uploading' | 'done' | 'error' {
+    return this.uploadStatus[publicId] || 'idle';
+  }
+
+  pickDocFor(ct: RequiredCredentialType, input: HTMLInputElement): void {
+    if (this.docStatus(ct.publicId) === 'uploading') return;
+    this.pendingType = ct;
+    input.click();
+  }
+
+  onDocSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    const ct = this.pendingType;
+    if (!file || !ct || !this.uploadToken) return;
+    this.uploadStatus[ct.publicId] = 'uploading';
+    prepareFileForUpload(file).then(prepared => {
+      this.applicantService.uploadApplicationDocument(this.uploadToken!, ct.publicId, prepared).subscribe({
+        next: () => { this.uploadStatus[ct.publicId] = 'done'; },
+        error: () => { this.uploadStatus[ct.publicId] = 'error'; }
+      });
+    }).catch(() => { this.uploadStatus[ct.publicId] = 'error'; });
+  }
+
+  finishDocs(): void {
+    this.docsDone = true;
   }
 }

@@ -102,6 +102,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/risk/risk-list.component').then(m => m.RiskListComponent)
       },
       {
+        path: 'blacklist',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/blacklist/blacklist.component').then(m => m.BlacklistComponent)
+      },
+      {
         path: 'reports',
         canActivate: [adminGuard],
         loadComponent: () => import('./features/reports/reports.component').then(m => m.ReportsComponent)

@@ -44,6 +44,19 @@ export interface ApplicantResponse {
   schoolName: string | null;
 }
 
+export interface RequiredCredentialType {
+  publicId: string;
+  name: string;
+  code: string;
+  mandatory: boolean;
+}
+
+export interface ApplicantRegistrationResult {
+  applicant: ApplicantResponse;
+  uploadToken: string | null;
+  requiredCredentialTypes: RequiredCredentialType[];
+}
+
 export interface PublicPositionResponse {
   publicId: string;
   name: string;

@@ -81,6 +81,13 @@ import { environment } from '../../../environments/environment';
               <mat-icon matListItemIcon>map</mat-icon>
               <span matListItemTitle>{{ 'nav.map' | transloco }}</span>
             </a>
+            @if (authService.isAdmin()) {
+              <a mat-list-item routerLink="/blacklist" routerLinkActive="active-link"
+                 (click)="isMobile && sidenav.close()">
+                <mat-icon matListItemIcon>block</mat-icon>
+                <span matListItemTitle>{{ 'nav.blacklist' | transloco }}</span>
+              </a>
+            }
             <a mat-list-item routerLink="/contract-templates" routerLinkActive="active-link"
                (click)="isMobile && sidenav.close()">
               <mat-icon matListItemIcon>description</mat-icon>

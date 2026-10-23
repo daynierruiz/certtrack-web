@@ -60,14 +60,14 @@ describe('ApplicantService', () => {
         placeId: 'place-1'
       }
     };
-    let result: ApplicantResponse | undefined;
+    let result: import('../models/applicant.model').ApplicantRegistrationResult | undefined;
     service.register(request).subscribe(r => result = r);
 
     const req = httpMock.expectOne(`${BASE}/register`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(request);
-    req.flush(makeApplicant());
-    expect(result?.status).toBe('APPLICANT');
+    req.flush({ applicant: makeApplicant(), uploadToken: 'tok', requiredCredentialTypes: [] });
+    expect(result?.applicant.status).toBe('APPLICANT');
   });
 
   it('getPositions: sin slug no envía query params', () => {

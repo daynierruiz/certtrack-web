@@ -22,6 +22,7 @@ import { ContractService } from '../../core/services/contract.service';
 import { Contract } from '../../core/models/contract.model';
 import { ContractSignDialogComponent } from '../contracts/contract-sign-dialog/contract-sign-dialog.component';
 import { AddressCardComponent } from './address-card.component';
+import { prepareFileForUpload } from '../../core/utils/file-prep.util';
 
 @Component({
   selector: 'app-my-profile',
@@ -42,13 +43,30 @@ import { AddressCardComponent } from './address-card.component';
 
         <!-- Header -->
         <div class="profile-header">
-          <div class="avatar" [class.avatar-applicant]="profile.employee.status === 'APPLICANT'"
+          <div class="avatar avatar-clickable"
+               [class.avatar-applicant]="profile.employee.status === 'APPLICANT'"
                [class.avatar-onboarding]="profile.employee.status === 'ONBOARDING'"
                [class.avatar-active]="profile.employee.status === 'ACTIVE'"
                [class.avatar-inactive]="profile.employee.status === 'INACTIVE'"
-               [class.avatar-terminated]="profile.employee.status === 'TERMINATED'">
-            <mat-icon>person</mat-icon>
+               [class.avatar-terminated]="profile.employee.status === 'TERMINATED'"
+               (click)="!uploadingPhoto && photoInput.click()"
+               [matTooltip]="'myProfile.photo.changeHint' | transloco">
+            @if (photoUrl) {
+              <img [src]="photoUrl" class="avatar-img" alt="">
+            } @else {
+              <mat-icon>person</mat-icon>
+            }
+            <div class="avatar-cam">
+              @if (uploadingPhoto) {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>photo_camera</mat-icon>
+              }
+            </div>
           </div>
+          <input #photoInput type="file" [accept]="photoAccept" hidden
+                 [attr.capture]="isMobile ? 'user' : null"
+                 (change)="onPhotoSelected($event)">
           <div class="header-info">
             <h1>{{ profile.employee.lastName }}, {{ profile.employee.firstName }}</h1>
             <p class="subtitle">{{ profile.employee.email }}</p>
@@ -68,6 +86,21 @@ import { AddressCardComponent } from './address-card.component';
             </div>
           </div>
         </div>
+
+        <!-- Profile photo required -->
+        @if (needsProfilePhoto) {
+          <div class="photo-required-banner">
+            <mat-icon>add_a_photo</mat-icon>
+            <div class="photo-required-body">
+              <div class="photo-required-title">{{ 'myProfile.photo.requiredTitle' | transloco }}</div>
+              <div class="photo-required-sub">{{ 'myProfile.photo.requiredSub' | transloco }}</div>
+            </div>
+            <button mat-raised-button color="primary" [disabled]="uploadingPhoto"
+                    (click)="photoInput.click()">
+              <mat-icon>photo_camera</mat-icon> {{ 'myProfile.photo.upload' | transloco }}
+            </button>
+          </div>
+        }
 
         <!-- Address Card -->
         <app-address-card
@@ -568,12 +601,34 @@ import { AddressCardComponent } from './address-card.component';
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .avatar {
+      position: relative;
       width: 72px; height: 72px; border-radius: 50%;
       background: linear-gradient(135deg, #1565c0, #0d47a1);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
     .avatar mat-icon { font-size: 36px; width: 36px; height: 36px; color: white; }
+    .avatar-clickable { cursor: pointer; }
+    .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .avatar-cam {
+      position: absolute; right: -2px; bottom: -2px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #1565c0; border: 2px solid #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .avatar-cam mat-icon { font-size: 14px; width: 14px; height: 14px; color: #fff; }
+    .photo-required-banner {
+      display: flex; align-items: center; gap: 16px;
+      padding: 14px 20px; border-radius: 8px; margin-bottom: 16px;
+      background: #fff3e0; border: 1px solid #ffb74d; color: #e65100;
+    }
+    .photo-required-banner > mat-icon { font-size: 30px; width: 30px; height: 30px; color: #ef6c00; flex-shrink: 0; }
+    .photo-required-body { flex: 1; }
+    .photo-required-title { font-weight: 600; }
+    .photo-required-sub { font-size: 13px; opacity: 0.9; }
+    @media (max-width: 600px) {
+      .photo-required-banner { flex-direction: column; align-items: flex-start; }
+    }
     .avatar-applicant { background: linear-gradient(135deg, #1565c0, #42a5f5); }
     .avatar-onboarding { background: linear-gradient(135deg, #7b1fa2, #ab47bc); }
     .avatar-active { background: linear-gradient(135deg, #2e7d32, #66bb6a); }
@@ -790,6 +845,9 @@ export class MyProfileComponent implements OnInit {
   profile: MyProfileResponse | null = null;
   error = '';
   isMobile = false;
+  photoUrl: string | null = null;
+  uploadingPhoto = false;
+  readonly photoAccept = 'image/jpeg,image/png,image/webp';
   pendingContracts: Contract[] = [];
   myContracts: Contract[] = [];
   displayedColumns = ['type', 'issuer', 'expirationDate', 'status', 'actions'];
@@ -852,10 +910,15 @@ export class MyProfileComponent implements OnInit {
     return this.profile.credentials.filter(c => c.status === 'EXPIRING_SOON');
   }
 
+  get needsProfilePhoto(): boolean {
+    return !!this.profile && !this.profile.hasProfilePhoto;
+  }
+
   get isReadyToWork(): boolean {
     if (!this.profile) return false;
     return this.profile.totalRequired > 0
-        && this.profile.totalCompleted === this.profile.totalRequired;
+        && this.profile.totalCompleted === this.profile.totalRequired
+        && this.profile.hasProfilePhoto;
   }
 
   get notReadyReasons(): string[] {
@@ -869,6 +932,7 @@ export class MyProfileComponent implements OnInit {
     if (pendingCount > 0) reasons.push(this.transloco.translate('myProfile.profile.reasonPendingReview', { count: pendingCount }));
     const rejectedCount = this.rejectedCredentials.length;
     if (rejectedCount > 0) reasons.push(this.transloco.translate('myProfile.profile.reasonRejected', { count: rejectedCount }));
+    if (this.needsProfilePhoto) reasons.push(this.transloco.translate('myProfile.photo.reason'));
     return reasons;
   }
 
@@ -879,6 +943,7 @@ export class MyProfileComponent implements OnInit {
         this.profile = profile;
         this.buildCredTypeMap();
         this.loadContracts();
+        if (profile.hasProfilePhoto) this.loadPhoto();
         this.loading = false;
       },
       error: (err) => {
@@ -886,6 +951,58 @@ export class MyProfileComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  private loadPhoto(): void {
+    this.myProfileService.getPhotoUrl().subscribe({
+      next: (url) => {
+        if (this.photoUrl) URL.revokeObjectURL(this.photoUrl);
+        this.photoUrl = url;
+      },
+      error: () => { /* keep placeholder */ }
+    });
+  }
+
+  onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.uploadingPhoto = true;
+    // Auto-orient + compress (same pipeline as document uploads) before sending.
+    prepareFileForUpload(file).then(prepared => {
+      this.myProfileService.uploadPhoto(prepared).subscribe({
+        next: () => {
+          this.uploadingPhoto = false;
+          if (this.profile) this.profile.hasProfilePhoto = true;
+          this.loadPhoto();
+          this.snackBar.open(this.transloco.translate('myProfile.photo.uploaded'), 'OK', { duration: 3000 });
+        },
+        error: (err) => {
+          this.uploadingPhoto = false;
+          this.snackBar.open(this.photoErrorMessage(err), 'OK', { duration: 6000 });
+        }
+      });
+    }).catch(() => {
+      this.uploadingPhoto = false;
+      this.snackBar.open(this.transloco.translate('common.unsupportedFileType'), 'OK', { duration: 4000 });
+    });
+  }
+
+  /** Localize a photo-upload error, mapping the AI face-validation reason codes. */
+  private photoErrorMessage(err: { error?: { message?: string } }): string {
+    const msg = err?.error?.message || '';
+    if (msg.startsWith('FACE_INVALID:')) {
+      const code = msg.substring('FACE_INVALID:'.length);
+      const key = ({
+        no_face: 'myProfile.photo.invalidNoFace',
+        multiple_faces: 'myProfile.photo.invalidMultiple',
+        not_a_person: 'myProfile.photo.invalidNotPerson',
+        low_quality: 'myProfile.photo.invalidLowQuality'
+      } as Record<string, string>)[code] || 'myProfile.photo.invalidOther';
+      return this.transloco.translate(key);
+    }
+    return msg || this.transloco.translate('myProfile.photo.uploadError');
   }
 
   private loadContracts(): void {
