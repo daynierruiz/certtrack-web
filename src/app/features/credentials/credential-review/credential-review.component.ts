@@ -13,6 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { CredentialService } from '../../../core/services/credential.service';
@@ -31,7 +32,7 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
     MatTableModule, MatButtonModule,
     MatIconModule, MatCardModule, MatChipsModule, MatFormFieldModule,
     MatInputModule, MatSelectModule, MatDialogModule,
-    MatProgressSpinnerModule, MatSnackBarModule, TranslocoModule
+    MatProgressSpinnerModule, MatPaginatorModule, MatSnackBarModule, TranslocoModule
   ],
   template: `
     <div class="page-header">
@@ -83,7 +84,7 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
       } @else if (isMobile) {
         <!-- Mobile: stacked cards -->
         <div class="card-list">
-          @for (row of filtered; track row.publicId) {
+          @for (row of paged; track row.publicId) {
             <div class="entity-card">
               <div class="entity-card-top">
                 <a class="name-link" [routerLink]="['/employees', row.employeePublicId]">
@@ -106,7 +107,7 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
         </div>
       } @else {
         <div class="table-scroll">
-        <table mat-table [dataSource]="filtered" class="full-width">
+        <table mat-table [dataSource]="paged" class="full-width">
           <ng-container matColumnDef="employee">
             <th mat-header-cell *matHeaderCellDef>{{ 'credentials.list.colEmployee' | transloco }}</th>
             <td mat-cell *matCellDef="let row">
@@ -146,6 +147,13 @@ import { CredentialReviewDialogComponent } from '../credential-review-dialog/cre
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
         </div>
+      }
+
+      @if (!loading && filtered.length > 0) {
+        <mat-paginator [length]="filtered.length"
+                       [pageSize]="pageSize" [pageIndex]="pageIndex"
+                       [pageSizeOptions]="[10, 25, 50]"
+                       (page)="onPage($event)"></mat-paginator>
       }
     </mat-card>
   `,
@@ -205,6 +213,12 @@ export class CredentialReviewComponent implements OnInit {
   loading = true;
   isMobile = false;
   displayedColumns = ['employee', 'type', 'issuer', 'submitted', 'actions'];
+
+  // Client-side pagination over the filtered list (the full queue is loaded up
+  // front so search/type filters still span everything).
+  paged: Credential[] = [];
+  pageIndex = 0;
+  pageSize = 25;
 
   // Filters
   search = '';
@@ -281,6 +295,20 @@ export class CredentialReviewComponent implements OnInit {
       }
       return true;
     });
+    // Filter/search changed → back to the first page, then recompute the slice.
+    this.pageIndex = 0;
+    this.updatePaged();
+  }
+
+  private updatePaged(): void {
+    const start = this.pageIndex * this.pageSize;
+    this.paged = this.filtered.slice(start, start + this.pageSize);
+  }
+
+  onPage(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
+    this.updatePaged();
   }
 
   getEmployeeName(publicId: string): string {

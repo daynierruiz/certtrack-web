@@ -69,7 +69,7 @@ import { environment } from '../../../environments/environment';
                 </div>
               }
               @if (data.employees.applicants > 0) {
-                <div class="action-item clickable" (click)="navigate('/applicants')">
+                <div class="action-item clickable" [routerLink]="['/applicants']">
                   <mat-icon class="action-icon applicant">person_add</mat-icon>
                   <span class="action-text"><strong>{{ data.employees.applicants }}</strong> {{ (data.employees.applicants === 1 ? 'dashboard.actionRequired.applicantsToReviewOne' : 'dashboard.actionRequired.applicantsToReviewMany') | transloco }}</span>
                   <mat-icon class="action-arrow">chevron_right</mat-icon>
@@ -92,7 +92,7 @@ import { environment } from '../../../environments/environment';
             <div class="applicant-list">
               @for (a of pendingApplicants; track a.publicId) {
                 <div class="applicant-row">
-                  <div class="applicant-info clickable" (click)="navigate('/applicants')">
+                  <div class="applicant-info clickable" [routerLink]="['/employees', a.publicId]">
                     <div class="applicant-name">{{ a.firstName }} {{ a.lastName }}</div>
                     <div class="applicant-meta">{{ a.positionName }}<span *ngIf="a.applicationDate"> · {{ a.applicationDate }}</span></div>
                   </div>
@@ -233,7 +233,7 @@ import { environment } from '../../../environments/environment';
           <mat-card-content>
             @if (data.upcomingExpirations.length > 0) {
               <div class="table-scroll">
-              <table mat-table [dataSource]="data.upcomingExpirations" class="full-width">
+              <table mat-table [dataSource]="upcomingTop" class="full-width">
                 <ng-container matColumnDef="employeeName">
                   <th mat-header-cell *matHeaderCellDef>{{ 'dashboard.upcomingExpirations.colEmployee' | transloco }}</th>
                   <td mat-cell *matCellDef="let row">{{ row.employeeName }}</td>
@@ -257,7 +257,7 @@ import { environment } from '../../../environments/environment';
 
                 <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
                 <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-                    class="clickable-row" (click)="navigate('/credentials')"
+                    class="clickable-row" (click)="navigate('/credentials', {filter: 'EXPIRING_SOON'})"
                     [matTooltip]="'dashboard.upcomingExpirations.tooltipRow' | transloco"></tr>
               </table>
               </div>
@@ -270,8 +270,8 @@ import { environment } from '../../../environments/environment';
 
             @if (data.upcomingExpirations.length > 0) {
               <div class="view-all">
-                <button mat-button color="primary" (click)="navigate('/credentials')">
-                  {{ 'dashboard.upcomingExpirations.viewAll' | transloco }} <mat-icon>arrow_forward</mat-icon>
+                <button mat-button color="primary" (click)="navigate('/credentials', {filter: 'EXPIRING_SOON'})">
+                  {{ 'dashboard.upcomingExpirations.viewAll' | transloco }} ({{ data.upcomingExpirations.length }}) <mat-icon>arrow_forward</mat-icon>
                 </button>
               </div>
             }
@@ -618,6 +618,22 @@ export class DashboardComponent implements OnInit {
   private readonly mobileColumns = ['employeeName', 'credentialTypeName', 'daysUntilExpiry'];
   private static readonly RISK_LIST_LIMIT = 5;
   private static readonly RISK_MIN_SCORE = 20;
+  // Show only the soonest few on the dashboard; the rest live on /credentials
+  // (filtered). Memoized so the table dataSource ref stays stable across change
+  // detection (only recomputed when the underlying list actually changes).
+  private static readonly UPCOMING_LIMIT = 5;
+  private _upSrc: UpcomingExpiration[] | null = null;
+  private _upTop: UpcomingExpiration[] = [];
+
+  /** The soonest-expiring credentials to show on the dashboard (capped). */
+  get upcomingTop(): UpcomingExpiration[] {
+    const src = this.data?.upcomingExpirations ?? [];
+    if (src !== this._upSrc) {
+      this._upSrc = src;
+      this._upTop = src.slice(0, DashboardComponent.UPCOMING_LIMIT);
+    }
+    return this._upTop;
+  }
 
   constructor(
     private dashboardService: DashboardService,
