@@ -1203,7 +1203,9 @@ export class EmployeeProfileComponent implements OnInit {
     if (!file || !this.employee) return;
     const publicId = this.employee.publicId;
     this.uploadingPhoto = true;
-    prepareFileForUpload(file).then(prepared => {
+    // Avatars don't need full resolution; cap small (<~800KB) so the upload also
+    // clears nginx's body limit where the 50M override isn't applied.
+    prepareFileForUpload(file, { maxDimension: 1024, maxBytes: 800 * 1024 }).then(prepared => {
       this.employeeService.uploadPhoto(publicId, prepared).subscribe({
         next: () => {
           this.uploadingPhoto = false;

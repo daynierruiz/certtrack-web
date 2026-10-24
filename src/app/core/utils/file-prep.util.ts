@@ -44,7 +44,16 @@ export class UnsupportedFileError extends Error {
  * @throws UnsupportedFileError when the file is neither accepted by the
  *         backend nor decodable by this browser (e.g. HEIC on Chrome).
  */
-export async function prepareFileForUpload(file: File): Promise<File> {
+export interface PrepareOptions {
+  /** Longest-edge cap in px (default {@link MAX_DIMENSION} = 2000). */
+  maxDimension?: number;
+  /** Target max output size in bytes; quality is stepped down to fit (default 4MB). */
+  maxBytes?: number;
+}
+
+export async function prepareFileForUpload(file: File, opts: PrepareOptions = {}): Promise<File> {
+  const maxDimension = opts.maxDimension ?? MAX_DIMENSION;
+  const maxBytes = opts.maxBytes ?? MAX_IMAGE_BYTES;
   if (!file.type.startsWith('image/')) {
     if (BACKEND_ALLOWED_TYPES.has(file.type)) return file;
     throw new UnsupportedFileError(file.name);
@@ -62,7 +71,7 @@ export async function prepareFileForUpload(file: File): Promise<File> {
   }
 
   try {
-    const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
     const width = Math.max(1, Math.round(bitmap.width * scale));
     const height = Math.max(1, Math.round(bitmap.height * scale));
 
@@ -88,8 +97,9 @@ export async function prepareFileForUpload(file: File): Promise<File> {
     }
 
     let blob = await canvasToJpeg(canvas, 0.9);
-    if (blob.size > MAX_IMAGE_BYTES) blob = await canvasToJpeg(canvas, 0.8);
-    if (blob.size > MAX_IMAGE_BYTES) blob = await canvasToJpeg(canvas, 0.7);
+    if (blob.size > maxBytes) blob = await canvasToJpeg(canvas, 0.8);
+    if (blob.size > maxBytes) blob = await canvasToJpeg(canvas, 0.7);
+    if (blob.size > maxBytes) blob = await canvasToJpeg(canvas, 0.6);
 
     const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
     return new File([blob], newName, { type: 'image/jpeg' });

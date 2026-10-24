@@ -969,8 +969,10 @@ export class MyProfileComponent implements OnInit {
     input.value = '';
     if (!file) return;
     this.uploadingPhoto = true;
-    // Auto-orient + compress (same pipeline as document uploads) before sending.
-    prepareFileForUpload(file).then(prepared => {
+    // Auto-orient + compress before sending. Avatars don't need full resolution,
+    // so cap them small (<~800KB) — this also keeps the upload under nginx's body
+    // limit on environments where the 50M override isn't applied.
+    prepareFileForUpload(file, { maxDimension: 1024, maxBytes: 800 * 1024 }).then(prepared => {
       this.myProfileService.uploadPhoto(prepared).subscribe({
         next: () => {
           this.uploadingPhoto = false;

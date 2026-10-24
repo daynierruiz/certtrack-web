@@ -207,7 +207,9 @@ export class AccountComponent implements OnInit {
     input.value = '';
     if (!file || !this.agency) return;
     this.uploadingLogo = true;
-    prepareFileForUpload(file).then(prepared => {
+    // Logos are small by nature; cap tight (<~500KB) so the upload clears nginx's
+    // body limit even where the 50M override isn't applied.
+    prepareFileForUpload(file, { maxDimension: 800, maxBytes: 500 * 1024 }).then(prepared => {
       this.agencyService.uploadLogo(this.agency!.publicId, prepared).subscribe({
         next: () => {
           this.uploadingLogo = false;
