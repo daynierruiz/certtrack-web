@@ -64,8 +64,10 @@ export interface PublicPositionResponse {
 }
 
 export interface PublicAgencyInfo {
+  publicId: string;
   name: string;
   slug: string;
+  hasLogo: boolean;
 }
 
 export interface SetupPasswordRequest {
@@ -76,4 +78,7 @@ export interface SetupPasswordRequest {
 export interface SetupTokenResponse {
   email: string;
   valid: boolean;
+  agencyName: string | null;
+  agencyPublicId: string | null;
+  hasLogo: boolean;
 }

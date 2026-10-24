@@ -8,8 +8,20 @@ export interface AgencyResponse {
   contactEmail: string | null;
   briefingEnabled: boolean;
   briefingLanguage: 'en' | 'es';
+  hasLogo: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AgencyUpsertRequest {
+  name: string;
+  slug: string;
+  timezone: string;
+  country: string;
+  state: string;
+  contactEmail?: string | null;
+  briefingEnabled?: boolean;
+  briefingLanguage?: 'en' | 'es';
 }
 
 export interface AgencyBriefingSettingsRequest {

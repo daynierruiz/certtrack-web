@@ -58,6 +58,11 @@ export class ApplicantService {
     return this.http.post<AiExtractionResponse>(`${this.apiUrl}/extract`, fd);
   }
 
+  /** Public URL that serves an agency's branding logo bytes. */
+  agencyLogoUrl(agencyPublicId: string): string {
+    return `${environment.apiUrl}/agencies/${agencyPublicId}/logo`;
+  }
+
   getPositions(agencySlug?: string): Observable<PublicPositionResponse[]> {
     const params: Record<string, string> = {};
     if (agencySlug) params['agencySlug'] = agencySlug;

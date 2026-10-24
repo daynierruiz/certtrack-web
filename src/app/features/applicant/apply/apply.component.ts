@@ -51,7 +51,12 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
           <mat-card-header>
             <mat-card-title>
               <div class="logo">
-                <img src="assets/logo.png" alt="CareReady" class="logo-img">
+                @if (agencyLogoUrl) {
+                  <img [src]="agencyLogoUrl" [alt]="agencyInfo?.name || ''" class="logo-img agency-logo">
+                  <div class="powered-by">{{ 'branding.poweredBy' | transloco }}</div>
+                } @else {
+                  <img src="assets/logo.png" alt="CareReady" class="logo-img">
+                }
               </div>
             </mat-card-title>
             <mat-card-subtitle>{{ 'applicant.apply.subtitle' | transloco }}</mat-card-subtitle>
@@ -373,6 +378,8 @@ import { prepareFileForUpload } from '../../../core/utils/file-prep.util';
       color: #1a237e;
     }
     .logo-img { max-width: 250px; height: auto; }
+    .agency-logo { max-height: 90px; max-width: 260px; object-fit: contain; }
+    .powered-by { font-size: 11px; color: #90a4ae; margin-top: 4px; letter-spacing: 0.3px; }
     .form-row {
       display: flex;
       gap: 16px;
@@ -571,6 +578,13 @@ export class ApplyComponent implements OnInit {
 
   isOtherSelected(): boolean {
     return this.languages.includes('OTHER');
+  }
+
+  /** Agency branding logo URL, or null to fall back to the CareReady logo. */
+  get agencyLogoUrl(): string | null {
+    return this.agencyInfo?.hasLogo
+      ? this.applicantService.agencyLogoUrl(this.agencyInfo.publicId)
+      : null;
   }
 
   constructor(

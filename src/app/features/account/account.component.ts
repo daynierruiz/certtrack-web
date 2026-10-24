@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,6 +10,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/services/auth.service';
+import { AgencyService } from '../../core/services/agency.service';
+import { AgencyResponse } from '../../core/models/agency.model';
+import { prepareFileForUpload } from '../../core/utils/file-prep.util';
 
 /**
  * Self-service account page for the logged-in user (any role): edit name/email
@@ -82,6 +85,50 @@ import { AuthService } from '../../core/services/auth.service';
           </div>
         </form>
       </mat-card>
+
+      @if (isOwner) {
+        <mat-card class="account-card">
+          <h2>{{ 'account.branding.title' | transloco }}</h2>
+          <p class="branding-hint">{{ 'account.branding.hint' | transloco }}</p>
+
+          <div class="branding-logo-row">
+            <div class="branding-logo-preview">
+              @if (agencyLogoUrl) {
+                <img [src]="agencyLogoUrl" alt="">
+              } @else {
+                <mat-icon>image</mat-icon>
+              }
+            </div>
+            <div class="branding-logo-actions">
+              <button mat-stroked-button color="primary" type="button"
+                      [disabled]="uploadingLogo || !agency" (click)="logoInput.click()">
+                @if (uploadingLogo) {
+                  <mat-icon>hourglass_empty</mat-icon>
+                } @else {
+                  <mat-icon>upload</mat-icon>
+                }
+                {{ 'account.branding.uploadLogo' | transloco }}
+              </button>
+              <div class="branding-logo-help">{{ 'account.branding.logoHelp' | transloco }}</div>
+            </div>
+            <input #logoInput type="file" accept="image/jpeg,image/png,image/webp" hidden
+                   (change)="onLogoSelected($event)">
+          </div>
+
+          <form (ngSubmit)="saveAgencyName()">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>{{ 'account.branding.agencyName' | transloco }}</mat-label>
+              <input matInput name="agencyName" [(ngModel)]="agencyName" required maxlength="200">
+            </mat-form-field>
+            <div class="account-actions">
+              <button mat-flat-button color="primary" type="submit"
+                      [disabled]="savingAgency || !agencyName.trim() || !agency">
+                {{ 'account.branding.save' | transloco }}
+              </button>
+            </div>
+          </form>
+        </mat-card>
+      }
     </div>
   `,
   styles: [`
@@ -99,13 +146,24 @@ import { AuthService } from '../../core/services/auth.service';
       border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px;
     }
     .account-mustchange mat-icon { color: #f9a825; }
+    .branding-hint { color: #555; font-size: 13px; margin: -4px 0 16px; }
+    .branding-logo-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .branding-logo-preview {
+      width: 120px; height: 80px; border: 1px dashed #cfd8dc; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fafafa;
+    }
+    .branding-logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .branding-logo-preview mat-icon { color: #b0bec5; font-size: 32px; width: 32px; height: 32px; }
+    .branding-logo-actions { display: flex; flex-direction: column; gap: 6px; }
+    .branding-logo-help { font-size: 12px; color: #888; }
   `]
 })
-export class AccountComponent {
+export class AccountComponent implements OnInit {
   readonly authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
   private transloco = inject(TranslocoService);
   private router = inject(Router);
+  private agencyService = inject(AgencyService);
 
   fullName = this.authService.user()?.fullName ?? '';
   email = this.authService.user()?.email ?? '';
@@ -117,6 +175,83 @@ export class AccountComponent {
 
   profileSaving = false;
   passwordSaving = false;
+
+  // Agency branding (OWNER only).
+  agency: AgencyResponse | null = null;
+  agencyName = '';
+  uploadingLogo = false;
+  savingAgency = false;
+  private logoBust = 0;
+
+  get isOwner(): boolean {
+    return this.authService.user()?.role === 'OWNER';
+  }
+
+  get agencyLogoUrl(): string | null {
+    return this.agency?.hasLogo
+      ? this.agencyService.logoUrl(this.agency.publicId, this.logoBust || undefined)
+      : null;
+  }
+
+  ngOnInit(): void {
+    if (!this.isOwner) return;
+    this.agencyService.getOwn().subscribe({
+      next: a => { this.agency = a; this.agencyName = a.name; },
+      error: () => { /* non-fatal: branding card just stays empty */ }
+    });
+  }
+
+  onLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || !this.agency) return;
+    this.uploadingLogo = true;
+    prepareFileForUpload(file).then(prepared => {
+      this.agencyService.uploadLogo(this.agency!.publicId, prepared).subscribe({
+        next: () => {
+          this.uploadingLogo = false;
+          if (this.agency) this.agency.hasLogo = true;
+          this.logoBust = Date.now();   // cache-bust the <img>
+          this.snackBar.open(this.transloco.translate('account.branding.logoSaved'), 'OK', { duration: 3000 });
+        },
+        error: err => {
+          this.uploadingLogo = false;
+          this.snackBar.open(err?.error?.message ?? this.transloco.translate('account.saveError'), 'OK', { duration: 5000 });
+        }
+      });
+    }).catch(() => {
+      this.uploadingLogo = false;
+      this.snackBar.open(this.transloco.translate('common.unsupportedFileType'), 'OK', { duration: 4000 });
+    });
+  }
+
+  saveAgencyName(): void {
+    if (this.savingAgency || !this.agency || !this.agencyName.trim()) return;
+    this.savingAgency = true;
+    const a = this.agency;
+    this.agencyService.update(a.publicId, {
+      name: this.agencyName.trim(),
+      slug: a.slug,
+      timezone: a.timezone,
+      country: a.country,
+      state: a.state,
+      contactEmail: a.contactEmail,
+      briefingEnabled: a.briefingEnabled,
+      briefingLanguage: a.briefingLanguage
+    }).subscribe({
+      next: res => {
+        this.savingAgency = false;
+        this.agency = res;
+        this.agencyName = res.name;
+        this.snackBar.open(this.transloco.translate('account.branding.saved'), 'OK', { duration: 3000 });
+      },
+      error: err => {
+        this.savingAgency = false;
+        this.snackBar.open(err?.error?.message ?? this.transloco.translate('account.saveError'), 'OK', { duration: 5000 });
+      }
+    });
+  }
 
   roleLabel(): string {
     const role = this.authService.user()?.role ?? '';

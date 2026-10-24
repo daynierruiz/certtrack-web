@@ -38,8 +38,18 @@ import { LanguageService } from '../../../core/services/language.service';
         <mat-card-header>
           <mat-card-title>
             <div class="logo">
-              <img src="assets/logo.png" alt="CareReady" class="logo-img">
+              @if (agencyLogoUrl) {
+                <img [src]="agencyLogoUrl" [alt]="agencyName || ''" class="logo-img agency-logo">
+              } @else {
+                <img src="assets/logo.png" alt="CareReady" class="logo-img">
+              }
             </div>
+            @if (agencyName) {
+              <div class="agency-name-head">{{ agencyName }}</div>
+            }
+            @if (agencyLogoUrl) {
+              <div class="powered-by">{{ 'branding.poweredBy' | transloco }}</div>
+            }
           </mat-card-title>
           <mat-card-subtitle>{{ 'applicant.setPassword.subtitle' | transloco }}</mat-card-subtitle>
         </mat-card-header>
@@ -145,6 +155,9 @@ import { LanguageService } from '../../../core/services/language.service';
       color: #1a237e;
     }
     .logo-img { max-width: 250px; height: auto; }
+    .agency-logo { max-height: 90px; max-width: 260px; object-fit: contain; }
+    .agency-name-head { font-size: 18px; font-weight: 600; color: #1a237e; text-align: center; margin-top: 8px; }
+    .powered-by { font-size: 11px; color: #90a4ae; text-align: center; margin-top: 4px; letter-spacing: 0.3px; }
     .full-width { width: 100%; }
     .submit-btn {
       margin-top: 16px;
@@ -199,6 +212,10 @@ export class SetPasswordComponent implements OnInit {
   errorMessage = '';
   submitError = '';
 
+  // Agency branding (so the caregiver sees who they're setting up with).
+  agencyName: string | null = null;
+  agencyLogoUrl: string | null = null;
+
   get passwordMismatch(): boolean {
     return this.confirmPassword.length > 0 && this.password !== this.confirmPassword;
   }
@@ -225,6 +242,10 @@ export class SetPasswordComponent implements OnInit {
     this.applicantService.validateSetupToken(this.token).subscribe({
       next: (res) => {
         this.email = res.email;
+        this.agencyName = res.agencyName;
+        this.agencyLogoUrl = res.hasLogo && res.agencyPublicId
+          ? this.applicantService.agencyLogoUrl(res.agencyPublicId)
+          : null;
         this.validating = false;
       },
       error: (err) => {

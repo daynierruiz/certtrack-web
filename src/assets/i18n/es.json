@@ -1,4 +1,7 @@
 {
+  "branding": {
+    "poweredBy": "Con tecnología de CareReady"
+  },
   "applicant": {
     "apply": {
       "applyingTo": "Aplicando a",
@@ -308,6 +311,16 @@
   },
   "account": {
     "agency": "Agencia",
+    "branding": {
+      "title": "Identidad de la agencia",
+      "hint": "Se muestra a los aplicantes en el formulario de aplicación y al establecer la contraseña.",
+      "uploadLogo": "Subir logo",
+      "logoHelp": "PNG, JPG o WebP. Máx 5MB.",
+      "agencyName": "Nombre de la agencia",
+      "save": "Guardar nombre",
+      "saved": "Nombre de la agencia actualizado.",
+      "logoSaved": "Logo actualizado."
+    },
     "changePassword": "Cambiar contraseña",
     "confirmPassword": "Confirmar nueva contraseña",
     "currentPassword": "Contraseña actual",
