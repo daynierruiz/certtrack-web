@@ -49,14 +49,16 @@ import { prepareFileForUpload } from '../../core/utils/file-prep.util';
                [class.avatar-active]="profile.employee.status === 'ACTIVE'"
                [class.avatar-inactive]="profile.employee.status === 'INACTIVE'"
                [class.avatar-terminated]="profile.employee.status === 'TERMINATED'"
-               (click)="!uploadingPhoto && photoInput.click()"
-               [matTooltip]="'myProfile.photo.changeHint' | transloco">
+               (click)="onAvatarClick(photoInput)"
+               [matTooltip]="(photoUrl ? 'myProfile.photo.viewHint' : 'myProfile.photo.changeHint') | transloco">
             @if (photoUrl) {
               <img [src]="photoUrl" class="avatar-img" alt="">
             } @else {
               <mat-icon>person</mat-icon>
             }
-            <div class="avatar-cam">
+            <div class="avatar-cam"
+                 (click)="$event.stopPropagation(); !uploadingPhoto && photoInput.click()"
+                 [matTooltip]="'myProfile.photo.changeHint' | transloco">
               @if (uploadingPhoto) {
                 <mat-spinner diameter="18"></mat-spinner>
               } @else {
@@ -67,6 +69,16 @@ import { prepareFileForUpload } from '../../core/utils/file-prep.util';
           <input #photoInput type="file" [accept]="photoAccept" hidden
                  [attr.capture]="isMobile ? 'user' : null"
                  (change)="onPhotoSelected($event)">
+
+          @if (photoLightboxOpen && photoUrl) {
+            <div class="photo-lightbox" (click)="photoLightboxOpen = false">
+              <img [src]="photoUrl" alt="">
+              <button mat-icon-button class="lightbox-close"
+                      (click)="$event.stopPropagation(); photoLightboxOpen = false">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          }
           <div class="header-info">
             <h1>{{ profile.employee.lastName }}, {{ profile.employee.firstName }}</h1>
             <p class="subtitle">{{ profile.employee.email }}</p>
@@ -610,6 +622,14 @@ import { prepareFileForUpload } from '../../core/utils/file-prep.util';
     .avatar mat-icon { font-size: 36px; width: 36px; height: 36px; color: white; }
     .avatar-clickable { cursor: pointer; }
     .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .photo-lightbox {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; cursor: zoom-out;
+    }
+    .photo-lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 8px; object-fit: contain; }
+    .lightbox-close { position: fixed; top: 10px; right: 10px; color: #fff; }
     .avatar-cam {
       position: absolute; right: -2px; bottom: -2px;
       width: 24px; height: 24px; border-radius: 50%;
@@ -847,6 +867,7 @@ export class MyProfileComponent implements OnInit {
   isMobile = false;
   photoUrl: string | null = null;
   uploadingPhoto = false;
+  photoLightboxOpen = false;
   readonly photoAccept = 'image/jpeg,image/png,image/webp';
   pendingContracts: Contract[] = [];
   myContracts: Contract[] = [];
@@ -961,6 +982,16 @@ export class MyProfileComponent implements OnInit {
       },
       error: () => { /* keep placeholder */ }
     });
+  }
+
+  /** Click the avatar: enlarge the photo if there is one, otherwise pick a file. */
+  onAvatarClick(input: HTMLInputElement): void {
+    if (this.uploadingPhoto) return;
+    if (this.photoUrl) {
+      this.photoLightboxOpen = true;
+    } else {
+      input.click();
+    }
   }
 
   onPhotoSelected(event: Event): void {

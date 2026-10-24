@@ -693,6 +693,7 @@
     "photo": {
       "addHint": "Agregar foto de perfil",
       "changeHint": "Cambiar foto de perfil",
+      "viewHint": "Clic para ampliar",
       "uploaded": "Foto de perfil actualizada",
       "uploadError": "No se pudo subir la foto",
       "invalidNoFace": "No se detecta una cara clara. Usa una foto donde se vea el rostro.",
@@ -869,6 +870,7 @@
       "requiredSub": "La foto de perfil es obligatoria para completar tu perfil.",
       "upload": "Agregar foto",
       "changeHint": "Cambiar foto",
+      "viewHint": "Clic para ampliar",
       "uploaded": "Foto de perfil actualizada",
       "uploadError": "No se pudo subir la foto",
       "reason": "foto de perfil pendiente",

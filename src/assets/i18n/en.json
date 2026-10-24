@@ -693,6 +693,7 @@
     "photo": {
       "addHint": "Add profile photo",
       "changeHint": "Change profile photo",
+      "viewHint": "Click to enlarge",
       "uploaded": "Profile photo updated",
       "uploadError": "Could not upload the photo",
       "invalidNoFace": "No clear face detected. Use a photo where the face is visible.",
@@ -869,6 +870,7 @@
       "requiredSub": "A profile photo is required to complete your profile.",
       "upload": "Add photo",
       "changeHint": "Change photo",
+      "viewHint": "Click to enlarge",
       "uploaded": "Profile photo updated",
       "uploadError": "Could not upload the photo",
       "reason": "profile photo pending",

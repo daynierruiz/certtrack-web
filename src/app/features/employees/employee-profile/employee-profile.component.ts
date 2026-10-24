@@ -123,14 +123,16 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
         <mat-card class="header-card">
           <div class="header-content">
             <div class="avatar avatar-clickable" [class]="'avatar-' + employee.status.toLowerCase()"
-                 (click)="!uploadingPhoto && photoInput.click()"
-                 [matTooltip]="(photoUrl ? 'employeeProfile.photo.changeHint' : 'employeeProfile.photo.addHint') | transloco">
+                 (click)="onAvatarClick(photoInput)"
+                 [matTooltip]="(photoUrl ? 'employeeProfile.photo.viewHint' : 'employeeProfile.photo.addHint') | transloco">
               @if (photoUrl) {
                 <img [src]="photoUrl" class="avatar-img" alt="">
               } @else {
                 <mat-icon>person</mat-icon>
               }
-              <div class="avatar-cam" [class.avatar-cam-warn]="!photoUrl">
+              <div class="avatar-cam" [class.avatar-cam-warn]="!photoUrl"
+                   (click)="$event.stopPropagation(); !uploadingPhoto && photoInput.click()"
+                   [matTooltip]="'employeeProfile.photo.changeHint' | transloco">
                 @if (uploadingPhoto) {
                   <mat-spinner diameter="18"></mat-spinner>
                 } @else {
@@ -141,6 +143,16 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
             <input #photoInput type="file" accept="image/jpeg,image/png,image/webp" hidden
                    [attr.capture]="isMobile ? 'user' : null"
                    (change)="onPhotoSelected($event)">
+
+            @if (photoLightboxOpen && photoUrl) {
+              <div class="photo-lightbox" (click)="photoLightboxOpen = false">
+                <img [src]="photoUrl" alt="">
+                <button mat-icon-button class="lightbox-close"
+                        (click)="$event.stopPropagation(); photoLightboxOpen = false">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            }
             <div class="header-info">
               <h1>{{ employee.lastName }}, {{ employee.firstName }}</h1>
               <div class="header-meta">
@@ -796,6 +808,14 @@ import { HiringRoadmapComponent } from '../hiring-roadmap/hiring-roadmap.compone
     .avatar mat-icon { font-size: 36px; width: 36px; height: 36px; color: white; }
     .avatar-clickable { cursor: pointer; }
     .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .photo-lightbox {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; cursor: zoom-out;
+    }
+    .photo-lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 8px; object-fit: contain; }
+    .lightbox-close { position: fixed; top: 10px; right: 10px; color: #fff; }
     .avatar-cam {
       position: absolute; right: -2px; bottom: -2px;
       width: 24px; height: 24px; border-radius: 50%;
@@ -1102,6 +1122,7 @@ export class EmployeeProfileComponent implements OnInit {
   isMobile = false;
   photoUrl: string | null = null;
   uploadingPhoto = false;
+  photoLightboxOpen = false;
   blacklistMatches: BlacklistEntry[] = [];
 
   get validCount(): number {
@@ -1194,6 +1215,16 @@ export class EmployeeProfileComponent implements OnInit {
           err.error?.message || this.transloco.translate('blacklist.addError'), 'OK', { duration: 5000 })
       });
     });
+  }
+
+  /** Click the avatar: enlarge the photo if there is one, otherwise pick a file. */
+  onAvatarClick(input: HTMLInputElement): void {
+    if (this.uploadingPhoto) return;
+    if (this.photoUrl) {
+      this.photoLightboxOpen = true;
+    } else {
+      input.click();
+    }
   }
 
   onPhotoSelected(event: Event): void {
